@@ -2,17 +2,55 @@
 
 [English](README.en.md) | 中文
 
-一个 DeepSeek Harness 插件：报告 profile 里哪些能力没有可观察的消费者，并附一份固定「完成声明」写法的 skill。
+你装的插件注册了能力，但那些能力有没有真的被用上，没有任何地方会告诉你。这个插件就是来报这件事的。
 
-## 它做什么
+## 它解决什么
 
-插件注册一个模型工具和一个 skill。
+DSH 的插件可以向宿主注册工具、skill、服务和路由。注册成功不等于有人用。
 
-`consumer_audit` 读取活动 profile 的组合行，把每一行解析到它安装的包，扫描该包的注册站点，再统计每个已注册工具与 skill 在 `DSH_HOME` 下会话日志里出现的次数，报告其中没有观察到消费者的那些。
+一个插件可能在启动时安静地注册了三个工具，其中两个在过去几十次会话里一次都没被调用过。代码在，测试过，加载正常，只是没有任何任务走到那里。还有一类更隐蔽：插件只包裹了宿主已有的方法，什么都不注册，从清单上看它像什么都没做，实际上它确实在生效。
 
-skill 名为 `consumer-audit`，给出「完成」的写法规则：边界声明、五栏证据链、缺口归类，以及什么观测会推翻这条声明。
+`consumer_audit` 把这件事变成一份可核对的清单。它读取活动 profile 的组成行，解析每一行装的是哪个包，静态扫描该包的注册站点，再去 `DSH_HOME` 下的会话日志里数每个已注册工具和 skill 出现过几次，最后报告计数为 0 的那些。
 
-工具不给插件打分。一条 finding 说明某项能力没有可观察的消费者，不说明背后的插件不好。
+## 一份报告长什么样
+
+在装了 8 个插件的 profile 上跑一次，得到这样的结构（插件名换成中性写法）：
+
+```
+generated_from
+  rows              8     已声明的组成行
+  sessions_scanned  16    实际扫描的会话日志份数
+
+findings
+  tool_never_invoked   some-plugin/tool-x          16 份日志里 0 次调用
+  tool_never_invoked   this-plugin/consumer_audit  同上，包括它自己
+
+notes（不算问题，只是说明）
+  intercepts_host_behaviour  some-plugin       只包裹宿主已有方法，没有新能力可数
+  first_party_shipped        @deepseek-ai/...  随 harness 发行，不在 profile 里
+```
+
+每条 finding 都带证据定位、缺口归类和证伪条件。它长这样：
+
+```json
+{
+  "kind": "tool_never_invoked",
+  "object": "some-plugin/tool-x",
+  "consumer_count": 0,
+  "evidence": {
+    "locator": "<该插件安装目录>",
+    "method": "tool name searched across 16 scanned session logs"
+  },
+  "falsifier": "find one invocation in a session log this run did not scan",
+  "classification": "consumer_verification_gap"
+}
+```
+
+注意最后一栏。一条 finding 说的只是"这次扫描没看到消费者"，并附带可以推翻它的观测。它没说插件写得不好。
+
+## 什么时候用得上
+
+装完一个新插件，想知道它有没有在干活。怀疑某个功能写了但没接上。清理 profile 之前，想知道删掉谁不会有影响。自己写插件，想知道哪部分没人调用。
 
 ## 安装
 
@@ -20,9 +58,15 @@ skill 名为 `consumer-audit`，给出「完成」的写法规则：边界声明
 dsh plugin --profile <profile> add github:qimen039-code/dsh-consumer-audit
 ```
 
+装完需要重启 DSH，工具才会出现在模型工具表里。
+
+如果你手工把包装进 profile，注意解析位置：DSH 的 loader 只从**活动 profile 自己的** `node_modules` 解析插件包，放在 `profiles/node_modules` 下无效，会以 `PackageOverlayNotFoundError` 启动失败。用上面的命令安装不会遇到这个问题，它写进的是 profile 的依赖图。
+
 需要 Node 22.15 或更新版本，因为会话日志是多帧 zstd。
 
 ## 怎么读报告
+
+报告里有六类字段。
 
 | 字段 | 含义 |
 | --- | --- |
@@ -33,9 +77,7 @@ dsh plugin --profile <profile> add github:qimen039-code/dsh-consumer-audit
 | `duplicate_prompt_section` | 两个包注册了同名的提示词段 |
 | `package_unresolved` | 这一行的包既不在 profile 里，也不属于随 harness 发行的那批 |
 
-有两类结果记为 notes 而不是 finding，因为调用计数判断不了它们。包名以 `@deepseek-ai/` 开头的行随 harness 发行，搜索为空说明不了任何事。包裹既有服务方法的包不注册新能力，也就没有可数的工具。
-
-每条 finding 带证据定位、按 ACCF effectiveness-gap 分类法给出的归类，以及会推翻它的观测。
+另有两类结果记为 notes，不做判定。包名以 `@deepseek-ai/` 开头的行随 harness 发行，搜索为空说明不了任何事。包裹既有服务方法的包不注册新能力，调用计数判断不了它。
 
 ## 边界
 
@@ -75,7 +117,7 @@ console.log(ablation(input));
 
 当前数字与逐条描述见 [EVIDENCE.md](EVIDENCE.md)。README 不抄这些数字，它们每次运行都会变。
 
-**尚未验证**：装好后由 DSH loader 真正加载这一环。包是通过对它导出的 `apply()` 传入一个记录型上下文来跑的，导出形状取自本机两个确实能加载的插件。
+**尚未验证**：市场精选列表上架。entry 文件已就绪，仓库公开，但 PR 未提。
 
 ## 仓库结构
 

@@ -2,23 +2,65 @@
 
 English | [中文](README.md)
 
-A DeepSeek Harness plugin that reports which capabilities in a profile have no observed consumer, and a skill that fixes the format for claiming work is complete.
+Your plugins register capabilities. Whether anything ever uses them is not reported anywhere. This plugin reports it.
 
-## What it does
+## The problem
 
-The plugin registers one model tool and one skill.
+A DSH plugin can register tools, skills, services and routes with the host. Registering a capability is not the same as something using it.
 
-`consumer_audit` reads the active profile's composition rows, resolves each row to its installed package, scans that package for registration sites, and counts how often each registered tool and skill appears in the session logs under `DSH_HOME`. It reports the ones with no observed consumer.
+A plugin can quietly register three tools at startup and two of them may never be called across dozens of sessions. The code is there, it was tested, it loads. No task ever reaches those two. There is a subtler case as well: a plugin that only wraps an existing host method registers nothing at all, so a listing makes it look idle while it is in fact working.
 
-The skill, `consumer-audit`, supplies the wording rules for a completion claim: a boundary statement, a five-field evidence chain, a gap classification, and the observation that would falsify the claim.
+`consumer_audit` turns this into a list you can check. It reads the active profile's composition rows, resolves each row to the installed package, scans that package for registration sites, counts how often each registered tool and skill appears in the session logs under `DSH_HOME`, and reports the ones whose count is zero.
 
-The tool does not grade plugins. A finding says that a capability has no observed consumer, not that the plugin behind it is bad.
+## What a report looks like
+
+On a profile with 8 plugins, one run produces this shape (plugin names made neutral):
+
+```
+generated_from
+  rows              8     declared composition rows
+  sessions_scanned  16    session logs actually scanned
+
+findings
+  tool_never_invoked   some-plugin/tool-x          0 calls across 16 logs
+  tool_never_invoked   this-plugin/consumer_audit  same, including itself
+
+notes (not problems, just statements)
+  intercepts_host_behaviour  some-plugin       wraps a host method, nothing to count
+  first_party_shipped        @deepseek-ai/...  ships with the harness, not in the profile
+```
+
+Every finding carries an evidence locator, a gap classification, and a falsifier:
+
+```json
+{
+  "kind": "tool_never_invoked",
+  "object": "some-plugin/tool-x",
+  "consumer_count": 0,
+  "evidence": {
+    "locator": "<that plugin's install directory>",
+    "method": "tool name searched across 16 scanned session logs"
+  },
+  "falsifier": "find one invocation in a session log this run did not scan",
+  "classification": "consumer_verification_gap"
+}
+```
+
+Read the last three fields together. A finding says that this scan saw no consumer, and it ships the observation that would overturn it. It does not say the plugin is bad.
+
+## When you would use it
+
+After installing a plugin, to see whether it is doing anything. When you suspect a feature was written but never wired up. Before cleaning a profile, to see which removals would go unnoticed. When writing a plugin, to see which parts nobody calls.
 
 ## Install
 
 ```sh
 dsh plugin --profile <profile> add github:qimen039-code/dsh-consumer-audit
 ```
+
+Restart DSH afterwards, or the tool will not appear in the model's tool table.
+
+If you place the package into a profile by hand, mind where it goes. The DSH loader resolves plugin packages only from the active profile's own `node_modules`. A copy under `profiles/node_modules` is not found, and the profile fails to boot with `PackageOverlayNotFoundError`. The command above avoids this by writing into the profile's dependency graph.
 
 Node 22.15 or newer is required, because session logs are multi-frame zstd.
 
@@ -34,8 +76,6 @@ Node 22.15 or newer is required, because session logs are multi-frame zstd.
 | `package_unresolved` | A row whose package is neither installed in the profile nor first-party |
 
 Two results are recorded as notes instead of findings, because invocation counting cannot judge them. A row whose package name starts with `@deepseek-ai/` ships inside the harness rather than the profile, so an empty search says nothing about it. A package that wraps an existing service method registers no new capability and has no tool to count.
-
-Each finding carries an evidence locator, a classification taken from the ACCF effectiveness-gap taxonomy, and the observation that would falsify it.
 
 ## Boundaries
 
@@ -75,7 +115,7 @@ It covers the market entry requirements, the market's own catalog parser and ins
 
 Current numbers and the per-item description are in [EVIDENCE.md](EVIDENCE.md). The README does not repeat them, because they change on every run.
 
-Not verified: loading through the DSH loader after install. The package is exercised by calling its exported `apply()` against a recording context, and the export shape is taken from two plugins that do load in this deployment.
+Not verified: a listing in the curated market. The entry file is ready and the repository is public, but no pull request has been opened.
 
 ## Repository layout
 
