@@ -186,7 +186,7 @@ contributing.md 写明："The published package's `repository` field must point 
 
 ### 6.7 AI 写作特征
 
-用户要求去掉 AI 味。依据取自 Wikipedia:Signs of AI writing（CC BY-SA，**未**随 MIT 仓库提交，放在仓库外的 `dsh-consumer-audit-references/`），并落成一个可跑的检查 `tools/lint-prose.mjs`，覆盖破折号滥用、"不是…而是…"、"not just … but"、内联加粗小标题列表、三段排比、夸大词、总结段、伪范围、弯引号。
+用户要求去掉 AI 味。依据取自 Wikipedia:Signs of AI writing（CC BY-SA，**未**随 MIT 仓库提交，放在仓库外的 `dsh-consumer-audit-references/`），并落成一个可跑的检查 `tools/lint-prose.mjs`，覆盖十个特征：破折号滥用、反向对举（中英文各一条正则）、只列否定的排比、内联加粗小标题列表、强化程度词、总结与结论段、伪范围、弯引号。
 
 结果：
 

@@ -1,5 +1,5 @@
 === dsh-consumer-audit evidence run ===
-generated: 2026-09-12T10:34:38.0590765+08:00
+generated: 2026-09-12T10:35:23.1330484+08:00
 node: v26.3.0
 platform: Microsoft Windows NT 10.0.26200.0
 ## 1. market entry requirements
@@ -252,23 +252,10 @@ exit=0
   "lines": 290,
   "bold_marks": 160,
   "bold_per_100_lines": 55.2,
-  "violations": [
-    {
-      "rule": "negative-parallelism",
-      "why": "not just / not only ... but",
-      "count": 1,
-      "first": "not just … but"
-    },
-    {
-      "rule": "negative-parallelism-zh",
-      "why": "不是…而是…",
-      "count": 1,
-      "first": "不是…而是"
-    }
-  ],
-  "violation_count": 2
+  "violations": [],
+  "violation_count": 0
 }
-exit=1
+exit=0
 ## 2. plugin contract and behaviour, with the shipped presets root NOT supplied
 ### plugin checks (default roots)
     node C:\Users\MJ\Projects\dsh-consumer-audit\tools\verify-plugin.mjs
@@ -391,7 +378,7 @@ exit=1
   ],
   "passed": 22,
   "total": 22,
-  "execute_seconds": 1.51,
+  "execute_seconds": 1.56,
   "findings": [
     "tool_never_invoked: continuity_recall (from @mj/dsh-continuity)"
   ],
@@ -527,7 +514,7 @@ exit=0
   ],
   "passed": 22,
   "total": 22,
-  "execute_seconds": 1.49,
+  "execute_seconds": 1.58,
   "findings": [
     "tool_never_invoked: continuity_recall (from @mj/dsh-continuity)"
   ],
@@ -584,7 +571,7 @@ exit=0
 ### install into isolated prefix
     npm install --prefix C:\Users\MJ\Projects\dsh-consumer-audit\.install-check --no-save --ignore-scripts C:\Users\MJ\Projects\dsh-consumer-audit\.install-check\dsh-consumer-audit-0.1.0.tgz
 
-added 4 packages in 377ms
+added 4 packages in 435ms
 exit=0
 ### plugin checks (installed copy)
     node C:\Users\MJ\Projects\dsh-consumer-audit\tools\verify-plugin.mjs C:\Users\MJ\Projects\dsh-consumer-audit\.install-check\node_modules\dsh-consumer-audit
@@ -707,7 +694,7 @@ exit=0
   ],
   "passed": 22,
   "total": 22,
-  "execute_seconds": 1.49,
+  "execute_seconds": 1.6,
   "findings": [
     "tool_never_invoked: continuity_recall (from @mj/dsh-continuity)"
   ],
@@ -775,4 +762,4 @@ exit=0
 }
 exit=0
 ## result
-FAILED: prose lint
+all steps passed

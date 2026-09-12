@@ -69,8 +69,11 @@ if (files.length === 0) {
 let total = 0;
 for (const file of files) {
   const text = readFileSync(file, "utf8");
-  // Fenced code blocks are not prose; strip them before counting.
-  const prose = text.replace(/```[\s\S]*?```/g, (m) => "\n".repeat(m.split("\n").length - 1));
+  // Fenced code blocks and inline code spans are not prose. Stripping both also
+  // stops this linter from flagging a document that quotes one of its own rules.
+  const prose = text
+    .replace(/```[\s\S]*?```/g, (m) => "\n".repeat(m.split("\n").length - 1))
+    .replace(/`[^`\n]*`/g, " ");
   const boldCount = (prose.match(/\*\*/g) ?? []).length;
   const lines = prose.split("\n").length;
   const hits = [];
