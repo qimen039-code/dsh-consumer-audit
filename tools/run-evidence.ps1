@@ -44,6 +44,16 @@ New-Item -ItemType Directory -Path $stage | Out-Null
 Section '1. market entry requirements'
 Run 'market manifest checks' 'node' @(Join-Path $PSScriptRoot 'verify-market-manifest.mjs')
 
+Section '1b. the real market consumer (its own catalog parser + install resolver)'
+$market = Join-Path $env:USERPROFILE '.dsh\profiles\desktop\node_modules\dshmarket'
+if (Test-Path $market) {
+  Run 'market consumer checks' 'node' @(
+    (Join-Path $PSScriptRoot 'verify-market-consumer.mjs'), '--market', $market
+  )
+} else {
+  'market not installed at the expected path; SKIPPED (not a pass)' | Add-Content $log
+}
+
 Section '2. plugin contract and behaviour, with the shipped presets root NOT supplied'
 # This is the deployment-realistic path: nothing tells the plugin where the
 # shipped presets live, so the report must say that root was not searched.

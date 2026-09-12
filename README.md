@@ -60,10 +60,11 @@ With consumer counting disabled, the tool reports those capabilities as **unasse
 | Check | Result |
 |---|---|
 | Market entry requirements (manifest, patch shape, category, peer ranges, description) | 22/22 |
+| **The market's own catalog parser and install resolver, driven against a local fixture via `DSHM_REGISTRY_URL`** | 13/13, with three negative controls that do fail. `installTargetFor` resolves the entry to `github:<owner>/dsh-consumer-audit` |
 | Plugin contract and behaviour — default roots, explicit roots, and the installed copy | 22/22 in each context |
 | Plugin export shape matches plugins that load in this deployment | `export default { name, apply }` |
 | The report marks the shipped-presets root searched iff one was supplied | default roots → `searched:false` and 2 skills; explicit root → `searched:true` and 4 skills |
-| Reported `continuity_recall` as never invoked | Independently recounted over the same 15 session logs: 14 `tool/call` records contain the string, **0** carry it as the call name. Controls `continuity_state` 68, `set_retention_tier` 6 |
+| Reported `continuity_recall` as never invoked | Independently recounted over the same 15 session logs: 14 `tool/call` records contain the string, **0** carry it as the call name. Controls `continuity_state` 70, `set_retention_tier` 6 |
 
 Reproduce all of it with one command:
 
@@ -71,12 +72,13 @@ Reproduce all of it with one command:
 .\tools\run-evidence.ps1
 ```
 
-Not verified: loading through the DSH loader after install. The package is exercised by calling its exported `apply()` against a recording context, not by starting a harness against it.
+Not verified: loading through the DSH loader after install. The package is exercised by calling its exported `apply()` against a recording context, not by starting a harness against it. The submission is not yet in the curated list — the market entry file is ready but no pull request has been opened.
 
-Two defects worth naming, both caught by running the checks rather than reading them:
+Three defects worth naming, each caught by running a check rather than reading one:
 
 - The first version exported a bare function and its own verifier passed 15/15, because the verifier asserted a contract invented in this repository rather than the one two working plugins use. The shape was corrected and the verifier now asserts the real contract.
 - The first version never resolved the shipped-presets root, so an installed plugin silently reported 2 skills instead of 4. The report now states which roots it searched and the verifier asserts that the shipped root is marked searched exactly when one was supplied.
+- The entry was first checked only against a reading of `contributing.md` — the same self-confirming shape as the first defect. It is now driven through the market's own `loadRegistry` and `installTargetFor`, which is what surfaced that the consumed shape (`owner`, `page`, `install`, `added`) differs from the submitted shape.
 
 ## Licence
 

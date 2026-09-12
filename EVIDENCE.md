@@ -121,6 +121,42 @@
 
 **结论：未被覆盖。** 差别在两处：判据不同（消费者 vs 完成），且本插件**不引入任何模型调用**——报告里的每个数字都能被独立重数推翻。
 
+### 5.1 真正的消费者：市场自己的解析器（本轮补的）
+
+上一轮我只把 entry 对着**我自己读的 contributing.md** 校了一遍。那正是 §6.1 那个自证陷阱的同一种形态——**我拿自己的理解去验自己的产物**。
+
+这一轮换成真消费者。市场源码 `src/registry.ts` 自己写明了做法：
+
+> "the layer-3 e2e points it at a local fixture catalog so the install route can be driven end to end **without publishing anything**"
+
+`DSHM_REGISTRY_URL`（`lib/regions.js:178`）就是这个口子。于是：本地起一个 HTTP fixture → 指向它 → 调市场自己的 `lib/registry.js` 的 `loadRegistry()` 与 `lib/sources.js` 的 `installTargetFor()`。
+
+**发现：消费格式 ≠ 投稿格式。**
+
+| | 字段 |
+|---|---|
+| 投稿（`data/plugins/*.yml`） | `url` `name` `category` `description{en,zh}` `tarball?` |
+| 消费（`plugins.json` 的 `RegistryPlugin`） | 上面全部 **+ `owner` `page` `install` `added`**，并包在 `{name,url,source,updated,count,categories,plugins}` 里 |
+
+那些多出来的字段由站点生成器补。**我的 YAML 不需要改**——但如果我只读文档不读消费者，就没法知道 `install` 是必填、`page` 存在、`category` 在消费端会被规范化成数组。
+
+**权威形状取自线上目录**（`tools/fetch-live-catalog.mjs`）：3,561 条、2,903,494 字节，字段实测为
+`name, owner, url, page, category, description{n,zh}, npm?, version?, stars?, downloads?, install, added`。
+分布：`install` 缺失 0 条、`owner` 缺失 0 条；**无 npm 1,900 条；无 tarball 3,344 条（94%）**。
+⇒ 我这种"无 npm、无 tarball、走 GitHub 源"的形态是**主流**，不是边角。
+
+**结果：13/13。** 其中三条是负向对照，证明这个测试会失败：
+
+```
+control: 非 GitHub 的 url           -> installTargetFor 返回 null
+control: category 为空              -> loadRegistry 抛出 "carries no usable category"
+control: plugins 为空数组            -> loadRegistry 抛出 "came back empty"
+```
+
+正例：`installTargetFor(entry)` → `github:qimen039-code/dsh-consumer-audit`。
+
+**边界**：本脚本对"YAML → plugins.json"的映射（`owner/page/install/added`）是**我的重建**——那个生成器不在数据仓库里，映射是从线上目录的实际形状反推的。被验证的**消费者一侧是原样、未改动的**。
+
 ---
 
 ## 6. 冗余与伪实现清理
@@ -189,29 +225,36 @@ audit-run-1.txt 里的 verdict: "consumer evidence narrowed 7 ... into 1 finding
 
 ```
 判据：  ① 市场 contributing.md 的机械要求全部可本地核验；
+        ①b 我的投稿 entry 必须能被**市场自己的**解析器与安装目标解析器消费，且控制组会失败；
         ② npm pack 出的 tarball 装进隔离前缀后，从装好的副本再跑一遍插件检查必须全过；
         ③ 插件导出形状必须与"本机能加载的插件"一致，而不是与本验证器一致；
         ④ 报告必须写出它搜索了哪些根；shipped 根被标记 searched 当且仅当确实提供了它；
         ⑤ tool_never_invoked 的 finding 必须能被独立重数推翻。
 执行：  powershell -File tools\run-evidence.ps1        （一条命令重跑全部五节）
         node tools\verify-market-manifest.mjs
+        node tools\verify-market-consumer.mjs --market <dshmarket>   （本地 fixture + DSHM_REGISTRY_URL）
+        node tools\fetch-live-catalog.mjs                            （取权威生成形状与分布）
         node tools\verify-plugin.mjs                    （默认根 / 显式根 / 装好的副本，三种上下文）
         npm pack --pack-destination .install-check
         npm install --prefix .install-check --no-save --ignore-scripts <tgz>
         node tools\recount-name.mjs continuity_recall | continuity_state | set_retention_tier
-观测：  ① 22/22
-        ② tarball 9 个文件；隔离安装 added 4 packages；装好的副本 22/22
-        ③ 契约由 @mj/dsh-continuity(export default { name, inject, apply }) 与
+观测：  ①  22/22
+        ①b 13/13；installTargetFor -> github:qimen039-code/dsh-consumer-audit；
+           三条负向对照分别命中 null / "no usable category" / "came back empty"
+        ②  tarball 9 个文件；隔离安装 added 4 packages；装好的副本 22/22
+        ③  契约由 @mj/dsh-continuity(export default { name, inject, apply }) 与
            @mj/dsh-image-admit 读出；修形状前是 15/15 的假通过（见 §6.1）
-        ④ 默认根：shipped preset 行 searched=false；显式根：searched=true 且 skill 数 2 → 4
-        ⑤ continuity_recall: tool/call 含字符串 14 条，精确调用名 0 条
-           continuity_state 68 条（本会话增长前为 66）；set_retention_tier 6 条
+        ④  默认根：shipped preset 行 searched=false；显式根：searched=true 且 skill 数 2 → 4
+        ⑤  continuity_recall: tool/call 含字符串 14 条，精确调用名 0 条
+           continuity_state 70 条（66 → 68 → 70，随本会话增长）；set_retention_tier 6 条
         一节不通过脚本即 exit 1：`all steps passed` / `FAILED: ...`
-归类：  applied_verified（工具逻辑、安装性、市场清单要求、导出形状、根搜索可见性）
-        stopped（**未验证**：装好后由 DSH loader 真实启动加载）
+归类：  applied_verified（工具逻辑、安装性、市场清单要求、**市场消费者解析**、导出形状、根搜索可见性）
+        stopped（**未验证**：装好后由 DSH loader 真实启动加载；以及站点生成器本身）
 边界：  没有在真实 profile 上执行 dsh plugin add（会改动用户活动插件树，AGENTS.md §2 记录过
         未声明的本地包会让整棵树加载失败）；没有启动 harness 端到端验证；
-        扫描只覆盖本机存在的 15 个会话文件；计数随会话增长漂移。
+        **没有向 awesome-dsh-plugin 提 PR**，所以"已进入市场"仍未发生；
+        扫描只覆盖本机存在的 15 个会话文件；计数随会话增长漂移；
+        本机市场配置了代理 http://127.0.0.1:8118（本地 fixture 抓取未受影响，正例通过）。
 ```
 
 `stopped` 与 `applied` 不混用：**loader 启动加载这一环是 `stopped`，不是成功。**
