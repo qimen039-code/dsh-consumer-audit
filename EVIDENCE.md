@@ -263,7 +263,7 @@ cannot resolve package "dsh-consumer-audit" from the Desktop installation or act
 PackageOverlayNotFoundError
 ```
 
-它只认「Desktop 安装 + **活动 Profile 自己的** node_modules」。本机的 `@mj/*` 恰好同时存在于两层，我照抄错了层次。
+它只认「Desktop 安装 + **活动 Profile 自己的** node_modules」。本机的几个本地插件恰好同时存在于两层，我照抄错了层次。
 
 **缺陷 2：读未声明的 ctx 属性会抛异常。** `cannot get property "config" without inject`。我写过一句"防御性"的 `ctx.config` 回退，在 Cordis 里它没有起到保护作用，反而让启动直接失败。
 
@@ -275,7 +275,7 @@ PackageOverlayNotFoundError
 
 ```
 [consumer-audit] LOAD-RECEIPT profile=desktop ctxTools=present disposers=2
-dsh web: http://127.0.0.1:<port>/?token=<redacted>
+dsh web: <loopback url with a one-time token>
 [status: running]
 ```
 

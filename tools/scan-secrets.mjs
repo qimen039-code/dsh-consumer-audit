@@ -22,7 +22,7 @@ const RULES = [
   { id: "loopback-endpoint", why: "local service address", re: /(?:127\.0\.0\.1|localhost):\d+/g },
   { id: "credential-shaped", why: "looks like a token", re: /\b(?:gho|ghp|ghs|ghr)_[A-Za-z0-9]{16,}\b|\bsk-[A-Za-z0-9_-]{16,}\b|\bBearer\s+[A-Za-z0-9._-]{16,}/g },
   { id: "dsh-home-layout", why: "local harness layout", re: /\.dsh[\\/](?:profiles|sessions|continuity|agent-presets|storages|mcp-servers)\b/g },
-  { id: "private-plugin-scope", why: "private plugin package", re: /@mj\/[a-z0-9-]+/g },
+  { id: "private-plugin-scope", why: "private plugin package", re: /@mj\/[a-z0-9-]*/g },
   { id: "third-party-local-tooling", why: "local tooling path or product", re: /asar-extract|Video-Script-Production|screenpipe|paddleocr|skill-tools|paddlex/gi },
   { id: "private-notes-path", why: "personal document path", re: /Documents[\\/]Codex|Codex[\\/]Archives/gi },
 ];
