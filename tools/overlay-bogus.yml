@@ -1,0 +1,6 @@
+# Overlay for a READ-ONLY composition test using a name that cannot resolve.
+# If --dump-config rejects an unresolvable name, it is validating resolution and
+# the sibling test with a real package proves something.
+- insert:
+    - id: consumer-audit-bogus
+      name: 'definitely-not-an-installed-package-xyz'

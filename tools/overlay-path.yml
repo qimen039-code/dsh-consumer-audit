@@ -1,0 +1,6 @@
+# Overlay for a READ-ONLY composition test:
+#   dsh --profile desktop --patch <this file> --dump-config
+# Nothing is installed and nothing is booted.
+- insert:
+    - id: consumer-audit
+      name: 'C:\Users\MJ\DeepSeek\dsh-consumer-audit'
