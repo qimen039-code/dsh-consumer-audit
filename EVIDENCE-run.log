@@ -1,10 +1,10 @@
 === dsh-consumer-audit evidence run ===
-generated: 2026-09-12T10:25:11.0428066+08:00
+generated: 2026-09-12T10:33:26.5526984+08:00
 node: v26.3.0
 platform: Microsoft Windows NT 10.0.26200.0
 ## 1. market entry requirements
 ### market manifest checks
-    node C:\Users\MJ\DeepSeek\dsh-consumer-audit\tools\verify-market-manifest.mjs
+    node C:\Users\MJ\Projects\dsh-consumer-audit\tools\verify-market-manifest.mjs
 {
   "passed": 22,
   "total": 22,
@@ -17,7 +17,7 @@ platform: Microsoft Windows NT 10.0.26200.0
     {
       "name": "cordis.patch.yml exists next to package.json",
       "ok": true,
-      "detail": "C:\\Users\\MJ\\DeepSeek\\dsh-consumer-audit\\cordis.patch.yml"
+      "detail": "C:\\Users\\MJ\\Projects\\dsh-consumer-audit\\cordis.patch.yml"
     },
     {
       "name": "patch has the insert list shape",
@@ -35,7 +35,7 @@ platform: Microsoft Windows NT 10.0.26200.0
     {
       "name": "entry file present",
       "ok": true,
-      "detail": "C:\\Users\\MJ\\DeepSeek\\dsh-consumer-audit\\market\\data__plugins__qimen039-code__dsh-consumer-audit.yml"
+      "detail": "C:\\Users\\MJ\\Projects\\dsh-consumer-audit\\market\\data__plugins__qimen039-code__dsh-consumer-audit.yml"
     },
     {
       "name": "entry url is a github repo url",
@@ -119,10 +119,10 @@ platform: Microsoft Windows NT 10.0.26200.0
 exit=0
 ## 1b. the real market consumer (its own catalog parser + install resolver)
 ### market consumer checks
-    node C:\Users\MJ\DeepSeek\dsh-consumer-audit\tools\verify-market-consumer.mjs --market C:\Users\MJ\.dsh\profiles\desktop\node_modules\dshmarket
+    node C:\Users\MJ\Projects\dsh-consumer-audit\tools\verify-market-consumer.mjs --market C:\Users\MJ\.dsh\profiles\desktop\node_modules\dshmarket
 {
   "market": "C:\\Users\\MJ\\.dsh\\profiles\\desktop\\node_modules\\dshmarket",
-  "submission_entry": "C:\\Users\\MJ\\DeepSeek\\dsh-consumer-audit\\market\\data__plugins__qimen039-code__dsh-consumer-audit.yml",
+  "submission_entry": "C:\\Users\\MJ\\Projects\\dsh-consumer-audit\\market\\data__plugins__qimen039-code__dsh-consumer-audit.yml",
   "generated_entry_used": {
     "name": "qimen039-code/dsh-consumer-audit",
     "owner": "qimen039-code",
@@ -147,7 +147,7 @@ exit=0
     {
       "name": "submission entry exists",
       "ok": true,
-      "detail": "C:\\Users\\MJ\\DeepSeek\\dsh-consumer-audit\\market\\data__plugins__qimen039-code__dsh-consumer-audit.yml"
+      "detail": "C:\\Users\\MJ\\Projects\\dsh-consumer-audit\\market\\data__plugins__qimen039-code__dsh-consumer-audit.yml"
     },
     {
       "name": "submission url is a github repo url",
@@ -215,9 +215,45 @@ exit=0
   ]
 }
 exit=0
+## 1c. prose: the AI-writing tells this repository claims to avoid
+### prose lint
+    node C:\Users\MJ\Projects\dsh-consumer-audit\tools\lint-prose.mjs C:\Users\MJ\Projects\dsh-consumer-audit\README.md C:\Users\MJ\Projects\dsh-consumer-audit\README.zh.md C:\Users\MJ\Projects\dsh-consumer-audit\skills\consumer-audit\SKILL.md C:\Users\MJ\Projects\dsh-consumer-audit\EVIDENCE.md
+{
+  "file": "README.md",
+  "lines": 95,
+  "bold_marks": 0,
+  "bold_per_100_lines": 0,
+  "violations": [],
+  "violation_count": 0
+}
+{
+  "file": "README.zh.md",
+  "lines": 95,
+  "bold_marks": 0,
+  "bold_per_100_lines": 0,
+  "violations": [],
+  "violation_count": 0
+}
+{
+  "file": "SKILL.md",
+  "lines": 140,
+  "bold_marks": 54,
+  "bold_per_100_lines": 38.6,
+  "violations": [],
+  "violation_count": 0
+}
+{
+  "file": "EVIDENCE.md",
+  "lines": 263,
+  "bold_marks": 146,
+  "bold_per_100_lines": 55.5,
+  "violations": [],
+  "violation_count": 0
+}
+exit=0
 ## 2. plugin contract and behaviour, with the shipped presets root NOT supplied
 ### plugin checks (default roots)
-    node C:\Users\MJ\DeepSeek\dsh-consumer-audit\tools\verify-plugin.mjs
+    node C:\Users\MJ\Projects\dsh-consumer-audit\tools\verify-plugin.mjs
 {
   "checks": [
     {
@@ -282,7 +318,7 @@ exit=0
     {
       "name": "skill body was loaded from disk",
       "ok": true,
-      "detail": "3348 chars"
+      "detail": "3320 chars"
     },
     {
       "name": "skill is model-invocable",
@@ -337,7 +373,7 @@ exit=0
   ],
   "passed": 22,
   "total": 22,
-  "execute_seconds": 1.54,
+  "execute_seconds": 1.53,
   "findings": [
     "tool_never_invoked: continuity_recall (from @mj/dsh-continuity)"
   ],
@@ -353,7 +389,7 @@ exit=0
 exit=0
 ## 3. plugin contract and behaviour, with the shipped presets root supplied
 ### plugin checks (explicit roots)
-    node C:\Users\MJ\DeepSeek\dsh-consumer-audit\tools\verify-plugin.mjs
+    node C:\Users\MJ\Projects\dsh-consumer-audit\tools\verify-plugin.mjs
 {
   "checks": [
     {
@@ -418,7 +454,7 @@ exit=0
     {
       "name": "skill body was loaded from disk",
       "ok": true,
-      "detail": "3348 chars"
+      "detail": "3320 chars"
     },
     {
       "name": "skill is model-invocable",
@@ -473,7 +509,7 @@ exit=0
   ],
   "passed": 22,
   "total": 22,
-  "execute_seconds": 1.53,
+  "execute_seconds": 1.51,
   "findings": [
     "tool_never_invoked: continuity_recall (from @mj/dsh-continuity)"
   ],
@@ -489,13 +525,13 @@ exit=0
 exit=0
 ## 4. npm pack + isolated install + behaviour of the installed copy
 ### npm pack
-    npm pack --pack-destination C:\Users\MJ\DeepSeek\dsh-consumer-audit\.install-check
+    npm pack --pack-destination C:\Users\MJ\Projects\dsh-consumer-audit\.install-check
 npm notice
 npm notice package: dsh-consumer-audit@0.1.0
 npm notice Tarball Contents
 npm notice 1.1kB LICENSE
-npm notice 4.8kB README.md
-npm notice 3.2kB README.zh.md
+npm notice 4.7kB README.md
+npm notice 4.1kB README.zh.md
 npm notice 66B cordis.patch.yml
 npm notice 10.8kB lib/audit.js
 npm notice 10.2kB lib/collect.js
@@ -506,17 +542,17 @@ npm notice Tarball Details
 npm notice name: dsh-consumer-audit
 npm notice version: 0.1.0
 npm notice filename: dsh-consumer-audit-0.1.0.tgz
-npm notice package size: 16.7 kB
-npm notice unpacked size: 44.3 kB
-npm notice shasum: 3fd12c3b66cd2ea11553fb966c3356881623a467
-npm notice integrity: sha512-V/xoZ0G+VECHP[...]V2hg2CNsLcyhw==
+npm notice package size: 17.3 kB
+npm notice unpacked size: 45.1 kB
+npm notice shasum: 1fab16e860cefc659a02d57f88999163bd568368
+npm notice integrity: sha512-eVQfYzxrVGPVq[...]tEBsbyhRtmkPQ==
 npm notice total files: 9
 npm notice
 dsh-consumer-audit-0.1.0.tgz
 exit=0
-tarball: C:\Users\MJ\DeepSeek\dsh-consumer-audit\.install-check\dsh-consumer-audit-0.1.0.tgz
+tarball: C:\Users\MJ\Projects\dsh-consumer-audit\.install-check\dsh-consumer-audit-0.1.0.tgz
 ### tarball contents
-    tar -tzf C:\Users\MJ\DeepSeek\dsh-consumer-audit\.install-check\dsh-consumer-audit-0.1.0.tgz
+    tar -tzf C:\Users\MJ\Projects\dsh-consumer-audit\.install-check\dsh-consumer-audit-0.1.0.tgz
 package/LICENSE
 package/lib/audit.js
 package/lib/collect.js
@@ -528,12 +564,12 @@ package/skills/consumer-audit/SKILL.md
 package/cordis.patch.yml
 exit=0
 ### install into isolated prefix
-    npm install --prefix C:\Users\MJ\DeepSeek\dsh-consumer-audit\.install-check --no-save --ignore-scripts C:\Users\MJ\DeepSeek\dsh-consumer-audit\.install-check\dsh-consumer-audit-0.1.0.tgz
+    npm install --prefix C:\Users\MJ\Projects\dsh-consumer-audit\.install-check --no-save --ignore-scripts C:\Users\MJ\Projects\dsh-consumer-audit\.install-check\dsh-consumer-audit-0.1.0.tgz
 
-added 4 packages in 431ms
+added 4 packages in 403ms
 exit=0
 ### plugin checks (installed copy)
-    node C:\Users\MJ\DeepSeek\dsh-consumer-audit\tools\verify-plugin.mjs C:\Users\MJ\DeepSeek\dsh-consumer-audit\.install-check\node_modules\dsh-consumer-audit
+    node C:\Users\MJ\Projects\dsh-consumer-audit\tools\verify-plugin.mjs C:\Users\MJ\Projects\dsh-consumer-audit\.install-check\node_modules\dsh-consumer-audit
 {
   "checks": [
     {
@@ -598,7 +634,7 @@ exit=0
     {
       "name": "skill body was loaded from disk",
       "ok": true,
-      "detail": "3348 chars"
+      "detail": "3320 chars"
     },
     {
       "name": "skill is model-invocable",
@@ -653,7 +689,7 @@ exit=0
   ],
   "passed": 22,
   "total": 22,
-  "execute_seconds": 1.54,
+  "execute_seconds": 1.55,
   "findings": [
     "tool_never_invoked: continuity_recall (from @mj/dsh-continuity)"
   ],
@@ -669,7 +705,7 @@ exit=0
 exit=0
 ## 5. independent recount of the reported finding
 ### continuity_recall
-    node C:\Users\MJ\DeepSeek\dsh-consumer-audit\tools\recount-name.mjs continuity_recall
+    node C:\Users\MJ\Projects\dsh-consumer-audit\tools\recount-name.mjs continuity_recall
 {
   "name": "continuity_recall",
   "files_scanned": 15,
@@ -677,43 +713,43 @@ exit=0
     "system/message": 9,
     "request/header": 23,
     "assistant/chunk": 27,
-    "assistant/message": 75,
-    "tool/call": 27,
-    "tool/result": 37,
-    "user/message": 30
+    "assistant/message": 82,
+    "tool/call": 33,
+    "tool/result": 43,
+    "user/message": 31
   },
   "tool_call_records_with_exact_name": 0
 }
 exit=0
 ### continuity_state (control)
-    node C:\Users\MJ\DeepSeek\dsh-consumer-audit\tools\recount-name.mjs continuity_state
+    node C:\Users\MJ\Projects\dsh-consumer-audit\tools\recount-name.mjs continuity_state
 {
   "name": "continuity_state",
   "files_scanned": 15,
   "by_carrier": {
     "request/header": 39,
     "assistant/chunk": 63,
-    "assistant/message": 154,
-    "tool/result": 40,
+    "assistant/message": 162,
+    "tool/result": 48,
     "system/message": 9,
-    "tool/call": 99,
+    "tool/call": 106,
     "tool-call-chunks": 49,
     "user/message": 11
   },
-  "tool_call_records_with_exact_name": 70
+  "tool_call_records_with_exact_name": 72
 }
 exit=0
 ### set_retention_tier (control)
-    node C:\Users\MJ\DeepSeek\dsh-consumer-audit\tools\recount-name.mjs set_retention_tier
+    node C:\Users\MJ\Projects\dsh-consumer-audit\tools\recount-name.mjs set_retention_tier
 {
   "name": "set_retention_tier",
   "files_scanned": 15,
   "by_carrier": {
     "request/header": 39,
     "assistant/chunk": 27,
-    "assistant/message": 68,
-    "tool/call": 28,
-    "tool/result": 25,
+    "assistant/message": 73,
+    "tool/call": 33,
+    "tool/result": 31,
     "tool-call-chunks": 6,
     "user/message": 2
   },

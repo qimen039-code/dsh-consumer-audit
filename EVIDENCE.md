@@ -40,7 +40,7 @@
 3. **第一方 `@deepseek-ai/*` 包不搜索。** 它们随 harness 发行（在 `app.asar` 内），报告记为 `first_party_shipped`，**不是**"缺失"。
 4. **扫描是启发式的。** 目前的模式集：`tools.register` / `provide(` / `.section(` / `skills.register` / `commands.register` / `webServer.register` / `ctx.effect(`。用其他方式注册的包会被误报，报告里写明了模式集。
 5. **包裹既有服务方法的行不做判定。** `@mj/dsh-image-admit` 就是这种：它改的是 `llm.resolveModelInfo`，不注册任何新能力，调用计数判断不了它。报告记 `intercepts_host_behaviour`，**不是**缺陷。
-6. **报告会写出它搜索了哪些根。** `generated_from.preset_roots_searched` 逐条给出 `origin / dir / searched`。**没被解析到的根会让它的 skill 从报告里消失——所以那一行必须显示 `searched:false`，而不是让报告安静地少几条。** 这条是实测发现缺陷后补的，见 §6.3。
+6. **报告会写出它搜索了哪些根。** `generated_from.preset_roots_searched` 逐条给出 `origin / dir / searched`。没被解析到的根会让它的 skill 从报告里消失，所以那一行必须显示 `searched:false`，不能安静地少几条。这条是实测发现缺陷后补的，见 §6.3。
 7. **计数会随会话增长漂移。** 同一台机器同一个工具，`continuity_state` 从 66 涨到 68，只是因为本会话又调用了两次。数字只对"运行那一刻的日志集合"成立。
 
 ---
@@ -100,10 +100,10 @@
 | 注册发生在被扫描的源码里 | 误报；已声明模式集与边界 |
 
 **问：有没有更便宜的等价方案？**
-有，而且已在用：**不建索引、不常驻服务、不做语义裁决**。工具每次现读现算（本机 1.3–1.5 秒）。引入缓存或 LLM 裁决会同时增加维护成本与"自污染"风险——用户明确说过纠偏机制维护成本过高就是治标不治本（C8）。
+有，而且已在用：**不建索引、不常驻服务、不做语义裁决**。工具每次现读现算（本机 1.3–1.5 秒）。引入缓存或 LLM 裁决会同时增加维护成本与"自污染"风险，用户明确说过纠偏机制维护成本过高就是治标不治本（C8）。
 
 **问：app.asar 能不能改？**
-能。用户已在 C5 明确：部署本体是可权衡的约定，不是禁地。本插件选择**不改** app.asar，理由不是"被禁止"，而是**它更优**：改 asar 会被升级覆盖、且 asar integrity 会自相矛盾；做成普通插件持久生效。
+能。用户已在 C5 明确：部署本体是可权衡的约定，不是禁地。本插件选择**不改** app.asar，理由是它更优：改 asar 会被升级覆盖，且 asar integrity 会自相矛盾；做成普通插件则持久生效。
 
 ---
 
@@ -119,11 +119,11 @@
 | `FuRongJun-1999/dsh-memory` | 元认知与持续学习架构 | 记忆/学习，不是组合审计 |
 | `kenz1117/dsh-engram` | 跨会话长期记忆 | 同上 |
 
-**结论：未被覆盖。** 差别在两处：判据不同（消费者 vs 完成），且本插件**不引入任何模型调用**——报告里的每个数字都能被独立重数推翻。
+**结论：未被覆盖。** 差别在两处：判据不同（消费者 vs 完成），且本插件**不引入任何模型调用**，报告里的每个数字都能被独立重数推翻。
 
 ### 5.1 真正的消费者：市场自己的解析器（本轮补的）
 
-上一轮我只把 entry 对着**我自己读的 contributing.md** 校了一遍。那正是 §6.1 那个自证陷阱的同一种形态——**我拿自己的理解去验自己的产物**。
+上一轮我只把 entry 对着**我自己读的 contributing.md** 校了一遍。那正是 §6.1 那个自证陷阱的同一种形态，**我拿自己的理解去验自己的产物**。
 
 这一轮换成真消费者。市场源码 `src/registry.ts` 自己写明了做法：
 
@@ -138,7 +138,7 @@
 | 投稿（`data/plugins/*.yml`） | `url` `name` `category` `description{en,zh}` `tarball?` |
 | 消费（`plugins.json` 的 `RegistryPlugin`） | 上面全部 **+ `owner` `page` `install` `added`**，并包在 `{name,url,source,updated,count,categories,plugins}` 里 |
 
-那些多出来的字段由站点生成器补。**我的 YAML 不需要改**——但如果我只读文档不读消费者，就没法知道 `install` 是必填、`page` 存在、`category` 在消费端会被规范化成数组。
+那些多出来的字段由站点生成器补。**我的 YAML 不需要改**，但如果我只读文档不读消费者，就没法知道 `install` 是必填、`page` 存在、`category` 在消费端会被规范化成数组。
 
 **权威形状取自线上目录**（`tools/fetch-live-catalog.mjs`）：3,561 条、2,903,494 字节，字段实测为
 `name, owner, url, page, category, description{n,zh}, npm?, version?, stars?, downloads?, install, added`。
@@ -155,7 +155,7 @@ control: plugins 为空数组            -> loadRegistry 抛出 "came back empty
 
 正例：`installTargetFor(entry)` → `github:qimen039-code/dsh-consumer-audit`。
 
-**边界**：本脚本对"YAML → plugins.json"的映射（`owner/page/install/added`）是**我的重建**——那个生成器不在数据仓库里，映射是从线上目录的实际形状反推的。被验证的**消费者一侧是原样、未改动的**。
+**边界**：本脚本对"YAML → plugins.json"的映射（`owner/page/install/added`）是**我的重建**，那个生成器不在数据仓库里，映射是从线上目录的实际形状反推的。被验证的**消费者一侧是原样、未改动的**。
 
 ---
 
@@ -180,7 +180,7 @@ control: plugins 为空数组            -> loadRegistry 抛出 "came back empty
 export default { name: NAME, inject: [...], apply(ctx) { ... } };
 ```
 
-按第一版形状，loader 装不上这个插件。而 `verify-plugin.mjs` 当时**报了 15/15 通过**——因为那个假 ctx 的契约是**我自己写的**，我拿假设去验假设。检查全绿，产物装不上，这正是"伪实现"的标准长相。
+按第一版形状，loader 装不上这个插件。而 `verify-plugin.mjs` 当时**报了 15/15 通过**，因为那个假 ctx 的契约是**我自己写的**，我拿假设去验假设。检查全绿，产物装不上，这正是"伪实现"的标准长相。
 
 修法两步，缺一不可：
 1. 改插件为真实形状；

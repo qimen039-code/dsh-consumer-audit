@@ -54,6 +54,15 @@ if (Test-Path $market) {
   'market not installed at the expected path; SKIPPED (not a pass)' | Add-Content $log
 }
 
+Section '1c. prose: the AI-writing tells this repository claims to avoid'
+Run 'prose lint' 'node' @(
+  (Join-Path $PSScriptRoot 'lint-prose.mjs'),
+  (Join-Path $pkgRoot 'README.md'),
+  (Join-Path $pkgRoot 'README.zh.md'),
+  (Join-Path $pkgRoot 'skills\consumer-audit\SKILL.md'),
+  (Join-Path $pkgRoot 'EVIDENCE.md')
+)
+
 Section '2. plugin contract and behaviour, with the shipped presets root NOT supplied'
 # This is the deployment-realistic path: nothing tells the plugin where the
 # shipped presets live, so the report must say that root was not searched.

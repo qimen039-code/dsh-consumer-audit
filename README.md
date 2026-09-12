@@ -1,47 +1,53 @@
 # dsh-consumer-audit
 
-Audit a DSH profile for capabilities nothing consumes, and fix the format of a completion claim.
+A DeepSeek Harness plugin that reports which capabilities in a profile have no observed consumer, and a skill that fixes the format for claiming work is complete.
 
-Two halves, one judgement:
+## What it does
 
-- **`consumer_audit` (tool)** — measures. It reads the active profile's declared composition rows, scans each installed package for its registration sites, counts how often each registered tool and skill appears in the session logs on this machine, and reports the ones with no observed consumer. It also runs its own ablation on request.
-- **`consumer-audit` (skill)** — reasons. It fixes the format for claiming work is complete (boundary statement, evidence chain, gap classification), the rules for an ablation, the first-principles self-review, and how to read the report.
+The plugin registers one model tool and one skill.
 
-The tool makes no quality judgement. A `tool_never_invoked` finding does not mean a plugin is bad; it means that capability currently has no observable consumer.
+`consumer_audit` reads the active profile's composition rows, resolves each row to its installed package, scans that package for registration sites, and counts how often each registered tool and skill appears in the session logs under `DSH_HOME`. It reports the ones with no observed consumer.
+
+The skill, `consumer-audit`, supplies the wording rules for a completion claim: a boundary statement, a five-field evidence chain, a gap classification, and the observation that would falsify the claim.
+
+The tool does not grade plugins. A finding says that a capability has no observed consumer, not that the plugin behind it is bad.
 
 ## Install
 
 ```sh
-dsh plugin --profile <profile> add dsh-consumer-audit
+dsh plugin --profile <profile> add github:qimen039-code/dsh-consumer-audit
 ```
 
-Requires Node 22.15+ (session logs are multi-frame zstd).
+Node 22.15 or newer is required, because session logs are multi-frame zstd.
 
-## What the report contains
+## Reading the report
 
-| Finding | Meaning |
-|---|---|
-| `tool_never_invoked` | Registered, but zero invocations in the scanned session logs |
-| `skill_never_loaded` | `SKILL.md` on disk, no session ever loaded it |
-| `prompt_only_capability` | Registers prompt text only — a description, not a mechanism |
+| Field | Meaning |
+| --- | --- |
+| `tool_never_invoked` | The tool is registered, and the scanned logs contain no call to it |
+| `skill_never_loaded` | `SKILL.md` exists on disk, and no scanned session loaded it |
+| `prompt_only_capability` | The package registers prompt text and nothing else |
 | `row_without_capability` | The row is mounted and the package resolves, but it registers nothing |
 | `duplicate_prompt_section` | Two packages register the same prompt section name |
-| `package_unresolved` | A non-first-party row whose package could not be resolved |
+| `package_unresolved` | A row whose package is neither installed in the profile nor first-party |
 
-Recorded as notes, deliberately **not** as findings:
+Two results are recorded as notes instead of findings, because invocation counting cannot judge them. A row whose package name starts with `@deepseek-ai/` ships inside the harness rather than the profile, so an empty search says nothing about it. A package that wraps an existing service method registers no new capability and has no tool to count.
 
-- `first_party_shipped` — a `@deepseek-ai/*` row that ships inside the harness rather than the profile.
-- `intercepts_host_behaviour` — a package that wraps an existing service method and registers no new capability. Invocation counting cannot judge it, so the report says so instead of calling the row empty.
-
-Every finding carries an evidence locator, a classification from the ACCF effectiveness-gap taxonomy, and the observation that would falsify it.
+Each finding carries an evidence locator, a classification taken from the ACCF effectiveness-gap taxonomy, and the observation that would falsify it.
 
 ## Boundaries
 
-- A static registration site is evidence that a capability is **declared**, not that it works.
-- An invocation count is evidence about **the logs that were scanned**. A tool used in an unscanned profile, or before the log window, reads as unused.
-- First-party packages are not searched for. They are recorded as shipped, not reported missing.
-- The scan is heuristic. A package that registers through a call site this scan does not know about is misreported, and the report says which patterns it looks for.
-- The report contains no semantic judgement.
+A registration site in the source shows that a capability is declared. It does not show that the capability works.
+
+An invocation count describes the logs that were scanned. A tool used in an unscanned profile, or before the log window, reads as unused. Counts also drift as a session grows.
+
+First-party packages ship inside the harness and are not searched. They are recorded as shipped rather than reported missing.
+
+The scan matches a fixed set of call patterns, and the report lists them. A package that registers through some other call site will be misreported.
+
+The field `generated_from.preset_roots_searched` lists every skill root the run looked at. A root that was not resolved means its skills are absent from the report, not that they are unused.
+
+The report carries no semantic judgement.
 
 ## Ablation
 
@@ -53,33 +59,36 @@ const input = collect({ dshHome, profileDir });
 console.log(ablation(input));
 ```
 
-With consumer counting disabled, the tool reports those capabilities as **unassessed** rather than as zero. An ablation that empties the input would look like it changed a lot while proving nothing.
+With consumer counting switched off, the tools and skills that need a count are reported as unassessed. An ablation that empties its input would look like a large change while proving nothing.
 
-## Verified
+## Verification
 
 | Check | Result |
-|---|---|
-| Market entry requirements (manifest, patch shape, category, peer ranges, description) | 22/22 |
-| **The market's own catalog parser and install resolver, driven against a local fixture via `DSHM_REGISTRY_URL`** | 13/13, with three negative controls that do fail. `installTargetFor` resolves the entry to `github:<owner>/dsh-consumer-audit` |
-| Plugin contract and behaviour — default roots, explicit roots, and the installed copy | 22/22 in each context |
-| Plugin export shape matches plugins that load in this deployment | `export default { name, apply }` |
-| The report marks the shipped-presets root searched iff one was supplied | default roots → `searched:false` and 2 skills; explicit root → `searched:true` and 4 skills |
-| Reported `continuity_recall` as never invoked | Independently recounted over the same 15 session logs: 14 `tool/call` records contain the string, **0** carry it as the call name. Controls `continuity_state` 70, `set_retention_tier` 6 |
-
-Reproduce all of it with one command:
+| --- | --- |
+| Market entry requirements | 22/22 |
+| The market's own catalog parser and install resolver, against a local fixture | 13/13, with three negative controls that do fail |
+| Plugin contract and behaviour, default roots | 22/22 |
+| Plugin contract and behaviour, shipped-presets root supplied | 22/22 |
+| `npm pack`, then install into an isolated prefix and re-run the checks against the installed copy | 22/22 |
+| First real finding, recounted independently | `continuity_recall` has 0 calls carrying that name across 15 session logs, while the control tools `continuity_state` and `set_retention_tier` have 70 and 6 |
 
 ```powershell
 .\tools\run-evidence.ps1
 ```
 
-Not verified: loading through the DSH loader after install. The package is exercised by calling its exported `apply()` against a recording context, not by starting a harness against it. The submission is not yet in the curated list — the market entry file is ready but no pull request has been opened.
+Loading through the DSH loader after install has not been verified. The package is exercised by calling its exported `apply()` against a recording context, and the export shape is taken from two plugins that do load in this deployment.
 
-Three defects worth naming, each caught by running a check rather than reading one:
+## Repository layout
 
-- The first version exported a bare function and its own verifier passed 15/15, because the verifier asserted a contract invented in this repository rather than the one two working plugins use. The shape was corrected and the verifier now asserts the real contract.
-- The first version never resolved the shipped-presets root, so an installed plugin silently reported 2 skills instead of 4. The report now states which roots it searched and the verifier asserts that the shipped root is marked searched exactly when one was supplied.
-- The entry was first checked only against a reading of `contributing.md` — the same self-confirming shape as the first defect. It is now driven through the market's own `loadRegistry` and `installTargetFor`, which is what surfaced that the consumed shape (`owner`, `page`, `install`, `added`) differs from the submitted shape.
+```
+lib/audit.js     pure judgement over a plain inventory, no I/O
+lib/collect.js   reads DSH_HOME and produces that inventory
+lib/index.js     registers the tool and the skill
+skills/          the skill body
+tools/           the checks and the publish script
+market/          the entry file for the curated list
+```
 
-## Licence
+## License
 
 MIT

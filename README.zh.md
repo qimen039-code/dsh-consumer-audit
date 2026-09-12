@@ -1,47 +1,53 @@
 # dsh-consumer-audit
 
-审计一个 DSH profile 里**没有消费者的能力**，并固定「完成声明」的证据链格式。
+一个 DeepSeek Harness 插件：报告 profile 里哪些能力没有可观察的消费者，并附一份固定「完成声明」写法的 skill。
 
-两半，一个判据：
+## 它做什么
 
-- **`consumer_audit`（工具）**——测量。读活动 profile 里已声明的组成行，扫描每个已安装包的注册点，统计每个已注册工具与 skill 在本机会话日志里出现的次数，报告从未被观察到消费者的那些。也可按请求跑自身消融。
-- **`consumer-audit`（skill）**——推理。固定"完成"的声明格式（边界声明、证据链、缺口归类）、消融纪律、第一性原理自审，以及怎么读那份报告。
+插件注册一个模型工具和一个 skill。
 
-工具不做质量判断。一条 `tool_never_invoked` 不表示插件写得差，只表示这条能力目前没有可观察的消费者。
+`consumer_audit` 读取活动 profile 的组合行，把每一行解析到它安装的包，扫描该包的注册站点，再统计每个已注册工具与 skill 在 `DSH_HOME` 下会话日志里出现的次数，报告其中没有观察到消费者的那些。
+
+skill 名为 `consumer-audit`，给出「完成」的写法规则：边界声明、五栏证据链、缺口归类，以及什么观测会推翻这条声明。
+
+工具不给插件打分。一条 finding 说明某项能力没有可观察的消费者，不说明背后的插件不好。
 
 ## 安装
 
 ```sh
-dsh plugin --profile <profile> add dsh-consumer-audit
+dsh plugin --profile <profile> add github:qimen039-code/dsh-consumer-audit
 ```
 
-需要 Node 22.15+（会话日志是多帧 zstd）。
+需要 Node 22.15 或更新版本，因为会话日志是多帧 zstd。
 
-## 报告里有哪几类
+## 怎么读报告
 
-| 项 | 含义 |
-|---|---|
-| `tool_never_invoked` | 注册了，但在被扫描的日志里 0 次调用 |
-| `skill_never_loaded` | `SKILL.md` 在盘上，没有任何会话加载过 |
-| `prompt_only_capability` | 只注册提示词——是说明书，不是机制 |
-| `row_without_capability` | 行挂上了、包也在，但没有任何注册或 effect 站点 |
-| `duplicate_prompt_section` | 两个包注册同名提示词段 |
-| `package_unresolved` | 非第一方行，但包解析不到 |
+| 字段 | 含义 |
+| --- | --- |
+| `tool_never_invoked` | 工具已注册，被扫描的日志里没有对它的调用 |
+| `skill_never_loaded` | 盘上有 `SKILL.md`，被扫描的会话没有加载过 |
+| `prompt_only_capability` | 这个包只注册提示词 |
+| `row_without_capability` | 行已挂载、包也解析到了，但它什么都没注册 |
+| `duplicate_prompt_section` | 两个包注册了同名的提示词段 |
+| `package_unresolved` | 这一行的包既不在 profile 里，也不属于随 harness 发行的那批 |
 
-**记为 notes、刻意不算 finding** 的两类：
+有两类结果记为 notes 而不是 finding，因为调用计数判断不了它们。包名以 `@deepseek-ai/` 开头的行随 harness 发行，搜索为空说明不了任何事。包裹既有服务方法的包不注册新能力，也就没有可数的工具。
 
-- `first_party_shipped` —— `@deepseek-ai/*` 随 harness 发行，不在 profile 里。
-- `intercepts_host_behaviour` —— 包裹既有服务方法、不注册新能力。调用计数判断不了它，所以报告如实说明，而不是把这一行说成空的。
-
-每条 finding 都带证据定位、按 ACCF effectiveness-gap 分类法给出的归类，以及**什么观测会推翻它**。
+每条 finding 带证据定位、按 ACCF effectiveness-gap 分类法给出的归类，以及会推翻它的观测。
 
 ## 边界
 
-- 静态注册站点只证明能力**被声明**，不证明它能用。
-- 调用计数只描述**被扫描的那些日志**。未扫描的 profile、日志窗口之前的调用，都会读成未使用。
-- 第一方包不搜索，记为 shipped，不报缺失。
-- 扫描是启发式的。用本扫描不认识的调用点注册的包会被误报，报告里写明了它匹配哪些模式。
-- 报告不含语义判断。
+源码里的注册站点只说明能力被声明了，不说明它能用。
+
+调用计数描述的是被扫描的那些日志。未扫描的 profile、日志窗口之前的调用都会读成未使用；会话变长，计数也会漂移。
+
+第一方包随 harness 发行，不参与搜索。报告把它们记为 shipped，不报缺失。
+
+扫描匹配一组固定的调用模式，报告里列出了这组模式。用其他调用点注册的包会被误报。
+
+字段 `generated_from.preset_roots_searched` 逐条列出本次运行看过的 skill 根。某个根没被解析到，意味着它的 skill 不在报告里，不意味着它们没被使用。
+
+报告不含语义判断。
 
 ## 消融
 
@@ -53,16 +59,35 @@ const input = collect({ dshHome, profileDir });
 console.log(ablation(input));
 ```
 
-关掉消费者计数时，工具把那些能力记为**未评估**，而不是记为 0。把输入置空的那种"消融"看起来差异巨大，实际什么也没证明。
+关掉消费者计数时，需要计数的工具与 skill 记作未评估。把输入置空的那种消融看起来差异很大，实际什么也证明不了。
 
-## 已验证
+## 验证
 
 | 检查 | 结果 |
-|---|---|
-| `npm pack` → 装进隔离前缀 → 从装好的副本再跑全部检查 | 17/17 通过 |
-| 报告 `continuity_recall` 从未被调用 | 独立重数同一批 15 个日志：14 条 `tool/call` 记录含该字符串，**0** 条以它为调用名；对照组 `continuity_state` 66 次、`set_retention_tier` 6 次 |
+| --- | --- |
+| 市场 entry 的机械要求 | 22/22 |
+| 市场自己的目录解析器与安装解析器，喂本地 fixture | 13/13，含三条会失败的负向对照 |
+| 插件契约与行为，默认根 | 22/22 |
+| 插件契约与行为，显式给出 shipped presets 根 | 22/22 |
+| `npm pack` 后装进隔离前缀，再对装好的副本重跑检查 | 22/22 |
+| 首个真实 finding，独立重数 | `continuity_recall` 在 15 个会话日志里以该名字出现的调用为 0 次；对照工具 `continuity_state` 与 `set_retention_tier` 分别为 70 与 6 |
 
-未验证：安装后由 DSH loader 真实加载。包是用导出的 `apply()` 对记录型上下文跑通的，不是启动一个 harness 跑通的。
+```powershell
+.\tools\run-evidence.ps1
+```
+
+装好后由 DSH loader 真正加载这一环尚未验证。包是通过对它导出的 `apply()` 传入一个记录型上下文来跑的，导出形状取自本机两个确实能加载的插件。
+
+## 仓库结构
+
+```
+lib/audit.js     对一份普通清单做判定，无 I/O
+lib/collect.js   读 DSH_HOME，产出那份清单
+lib/index.js     注册工具与 skill
+skills/          skill 正文
+tools/           各项检查与发布脚本
+market/          提交进精选列表的条目文件
+```
 
 ## 许可
 

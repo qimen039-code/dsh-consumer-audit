@@ -1,0 +1,58 @@
+{
+  "file": "README.md",
+  "lines": 95,
+  "bold_marks": 0,
+  "bold_per_100_lines": 0,
+  "violations": [],
+  "violation_count": 0
+}
+{
+  "file": "README.zh.md",
+  "lines": 95,
+  "bold_marks": 0,
+  "bold_per_100_lines": 0,
+  "violations": [],
+  "violation_count": 0
+}
+{
+  "file": "SKILL.md",
+  "lines": 140,
+  "bold_marks": 62,
+  "bold_per_100_lines": 44.3,
+  "violations": [
+    {
+      "rule": "em-dash",
+      "why": "overuse of em dashes",
+      "count": 6,
+      "first": "—"
+    },
+    {
+      "rule": "negative-parallelism-zh",
+      "why": "不是…而是…",
+      "count": 1,
+      "first": "不是结论，是"
+    }
+  ],
+  "violation_count": 7
+}
+{
+  "file": "EVIDENCE.md",
+  "lines": 263,
+  "bold_marks": 150,
+  "bold_per_100_lines": 57,
+  "violations": [
+    {
+      "rule": "em-dash",
+      "why": "overuse of em dashes",
+      "count": 14,
+      "first": "—"
+    },
+    {
+      "rule": "negative-parallelism-zh",
+      "why": "不是…而是…",
+      "count": 1,
+      "first": "不是\"被禁止\"，而是"
+    }
+  ],
+  "violation_count": 15
+}
