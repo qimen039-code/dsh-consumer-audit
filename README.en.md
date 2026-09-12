@@ -2,7 +2,7 @@
 
 English | [中文](README.md)
 
-A plugin's tools and skills are there for the model to call. Registering one does not mean the model ever calls it, and nothing reports on that. This plugin does.
+The plugins and skills you install register capabilities. Registering one does not mean the model ever calls it, nor that what it was designed to do actually took effect, and nothing reports on that. This plugin does.
 
 ## The problem
 
@@ -48,11 +48,11 @@ Every finding carries an evidence locator, a gap classification, and a falsifier
 
 Read the last three fields together. A finding says that this scan saw no consumer, and it ships the observation that would overturn it. It does not say the plugin is bad.
 
-## When the model runs it
+## When it is useful
 
-The model runs this check in a few situations: a plugin was just installed and it needs to know whether its capabilities are actually reached; a feature is suspected of having been written but never wired up; a profile is about to be cleaned and it needs to know which removals would go unnoticed; a plugin is being written and it needs to know which parts nothing calls.
+A plugin was just installed and you want to know whether it is doing anything. A feature is suspected of having been written but never wired up. A profile is about to be cleaned and the question is which removals would go unnoticed. A plugin is being written and the question is which parts nothing calls.
 
-Each of these is the model's own call, not a command anyone types.
+The model makes those calls itself and runs the audit; asking in plain language is enough.
 
 ## Install
 
@@ -68,7 +68,7 @@ Node 22.15 or newer is required, because session logs are multi-frame zstd.
 
 ## Reading the report
 
-The model that called the tool reads the report, and it stays in the transcript. There are six fields.
+There are six finding fields.
 
 | Field | Meaning |
 | --- | --- |
@@ -80,6 +80,10 @@ The model that called the tool reads the report, and it stays in the transcript.
 | `package_unresolved` | A row whose package is neither installed in the profile nor first-party |
 
 Two results are recorded as notes instead of findings, because invocation counting cannot judge them. A row whose package name starts with `@deepseek-ai/` ships inside the harness rather than the profile, so an empty search says nothing about it. A package that wraps an existing service method registers no new capability and has no tool to count.
+
+A separate `consumed` section lists the capabilities that were used, with their counts. A finding answers whether something is dead; `consumed` answers how much it is used. The field `generated_from.capability_names` marks whether each package's names were declared by the package or inferred by scanning; the declared ones are authoritative and the scanned ones can be misread.
+
+One line has to stay clear: a count shows that something was called or loaded. It does not show that what it was designed to do took effect. No deterministic log signal establishes that, and the report never claims it.
 
 ## Boundaries
 

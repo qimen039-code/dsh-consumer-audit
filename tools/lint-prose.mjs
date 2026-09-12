@@ -73,7 +73,12 @@ for (const file of files) {
   // stops this linter from flagging a document that quotes one of its own rules.
   const prose = text
     .replace(/```[\s\S]*?```/g, (m) => "\n".repeat(m.split("\n").length - 1))
-    .replace(/`[^`\n]*`/g, " ");
+    .replace(/`[^`\n]*`/g, " ")
+    // A document that documents these patterns has to quote them. The marker is
+    // explicit and per line, so it cannot quietly cover real prose.
+    .split("\n")
+    .map((line) => (line.includes("prose-lint:ignore") ? "" : line))
+    .join("\n");
   const boldCount = (prose.match(/\*\*/g) ?? []).length;
   const lines = prose.split("\n").length;
   const hits = [];

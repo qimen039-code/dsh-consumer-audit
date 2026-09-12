@@ -35,6 +35,10 @@
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
+    },
+    "capabilities": {
+      "tools": ["consumer_audit"],
+      "skills": ["consumer-audit"]
     }
   },
   "peerDependencies": {
