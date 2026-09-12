@@ -1,5 +1,10 @@
-=== 2026-09-12T10:18:20.6618752+08:00 ===
-## 1. market manifest check
+=== dsh-consumer-audit evidence run ===
+generated: 2026-09-12T10:22:33.6731727+08:00
+node: v26.3.0
+platform: Microsoft Windows NT 10.0.26200.0
+## 1. market entry requirements
+### market manifest checks
+    node C:\Users\MJ\DeepSeek\dsh-consumer-audit\tools\verify-market-manifest.mjs
 {
   "passed": 22,
   "total": 22,
@@ -30,22 +35,22 @@
     {
       "name": "entry file present",
       "ok": true,
-      "detail": "C:\\Users\\MJ\\DeepSeek\\dsh-consumer-audit\\market\\data__plugins__OWNER__dsh-consumer-audit.yml"
+      "detail": "C:\\Users\\MJ\\DeepSeek\\dsh-consumer-audit\\market\\data__plugins__qimen039-code__dsh-consumer-audit.yml"
     },
     {
       "name": "entry url is a github repo url",
       "ok": true,
-      "detail": "https://github.com/OWNER/dsh-consumer-audit"
+      "detail": "https://github.com/qimen039-code/dsh-consumer-audit"
     },
     {
       "name": "entry name is owner/repo",
       "ok": true,
-      "detail": "OWNER/dsh-consumer-audit"
+      "detail": "qimen039-code/dsh-consumer-audit"
     },
     {
       "name": "entry url and name agree",
       "ok": true,
-      "detail": "https://github.com/OWNER/dsh-consumer-audit vs OWNER/dsh-consumer-audit"
+      "detail": "https://github.com/qimen039-code/dsh-consumer-audit vs qimen039-code/dsh-consumer-audit"
     },
     {
       "name": "category is one of the allowed values",
@@ -112,7 +117,9 @@
   ]
 }
 exit=0
-## 2. plugin contract + behaviour (source tree)
+## 2. plugin contract and behaviour, with the shipped presets root NOT supplied
+### plugin checks (default roots)
+    node C:\Users\MJ\DeepSeek\dsh-consumer-audit\tools\verify-plugin.mjs
 {
   "checks": [
     {
@@ -129,6 +136,11 @@ exit=0
       "name": "plugin exposes apply()",
       "ok": true,
       "detail": "function"
+    },
+    {
+      "name": "shipped presets root resolution attempted",
+      "ok": true,
+      "detail": "(not resolved — must be visible as unsearched in the report)"
     },
     {
       "name": "apply() returns its declared surface",
@@ -195,6 +207,16 @@ exit=0
       "detail": 7
     },
     {
+      "name": "report lists the preset roots it searched",
+      "ok": true,
+      "detail": "[\"user preset:true\",\"shipped preset:false\"]"
+    },
+    {
+      "name": "shipped-preset root marked searched iff one was supplied",
+      "ok": true,
+      "detail": "supplied=false searched=false"
+    },
+    {
       "name": "renderer produced content blocks",
       "ok": true,
       "detail": "\"text\""
@@ -215,9 +237,9 @@ exit=0
       "detail": []
     }
   ],
-  "passed": 19,
-  "total": 19,
-  "execute_seconds": 1.4,
+  "passed": 22,
+  "total": 22,
+  "execute_seconds": 1.44,
   "findings": [
     "tool_never_invoked: continuity_recall (from @mj/dsh-continuity)"
   ],
@@ -231,14 +253,172 @@ exit=0
   "ablation_verdict": "consumer evidence narrowed 5 declared-but-unmeasured capabilities into 1 finding(s)"
 }
 exit=0
-## 3. npm pack + isolated install + behaviour (installed copy)
-
+## 3. plugin contract and behaviour, with the shipped presets root supplied
+### plugin checks (explicit roots)
+    node C:\Users\MJ\DeepSeek\dsh-consumer-audit\tools\verify-plugin.mjs
+{
+  "checks": [
+    {
+      "name": "default export is an object",
+      "ok": true,
+      "detail": "object"
+    },
+    {
+      "name": "plugin declares a name",
+      "ok": true,
+      "detail": "dsh-consumer-audit"
+    },
+    {
+      "name": "plugin exposes apply()",
+      "ok": true,
+      "detail": "function"
+    },
+    {
+      "name": "shipped presets root resolution attempted",
+      "ok": true,
+      "detail": "C:\\Users\\MJ\\DeepSeek\\.asar-extract\\node_modules\\@deepseek-ai\\dsh-agent-presets\\presets"
+    },
+    {
+      "name": "apply() returns its declared surface",
+      "ok": true,
+      "detail": "{\"tools\":[\"consumer_audit\"],\"skills\":[\"consumer-audit\"]}"
+    },
+    {
+      "name": "one tool registered",
+      "ok": true,
+      "detail": [
+        "consumer_audit"
+      ]
+    },
+    {
+      "name": "one skill registered",
+      "ok": true,
+      "detail": [
+        "consumer-audit"
+      ]
+    },
+    {
+      "name": "tool name",
+      "ok": true,
+      "detail": "consumer_audit"
+    },
+    {
+      "name": "tool has parameters schema",
+      "ok": true,
+      "detail": "[\"action\"]"
+    },
+    {
+      "name": "tool declares an output renderer",
+      "ok": true,
+      "detail": "function"
+    },
+    {
+      "name": "skill name is kebab-case",
+      "ok": true,
+      "detail": "consumer-audit"
+    },
+    {
+      "name": "skill body was loaded from disk",
+      "ok": true,
+      "detail": "3348 chars"
+    },
+    {
+      "name": "skill is model-invocable",
+      "ok": true,
+      "detail": "{\"modelInvocable\":true,\"userInvocable\":true}"
+    },
+    {
+      "name": "execute returned our report schema",
+      "ok": true,
+      "detail": "dsh-consumer-audit/report/v1"
+    },
+    {
+      "name": "execute measured the real machine",
+      "ok": true,
+      "detail": "15"
+    },
+    {
+      "name": "report carries boundaries",
+      "ok": true,
+      "detail": 7
+    },
+    {
+      "name": "report lists the preset roots it searched",
+      "ok": true,
+      "detail": "[\"user preset:true\",\"shipped preset:true\"]"
+    },
+    {
+      "name": "shipped-preset root marked searched iff one was supplied",
+      "ok": true,
+      "detail": "supplied=true searched=true"
+    },
+    {
+      "name": "renderer produced content blocks",
+      "ok": true,
+      "detail": "\"text\""
+    },
+    {
+      "name": "ablation action returns a verdict",
+      "ok": true,
+      "detail": "consumer evidence narrowed 7 declared-but-unmeasured capabilities into 1 finding(s)"
+    },
+    {
+      "name": "disposer removed the tool",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "name": "disposer removed the skill",
+      "ok": true,
+      "detail": []
+    }
+  ],
+  "passed": 22,
+  "total": 22,
+  "execute_seconds": 1.51,
+  "findings": [
+    "tool_never_invoked: continuity_recall (from @mj/dsh-continuity)"
+  ],
+  "notes": [
+    "intercepts_host_behaviour: image-admit -> @mj/dsh-image-admit",
+    "first_party_shipped: mcp-local-vision -> @deepseek-ai/dsh-mcp-client",
+    "first_party_shipped: mcp-aoci -> @deepseek-ai/dsh-mcp-client",
+    "first_party_shipped: bundle:@deepseek-ai/dsh-base -> @deepseek-ai/dsh-base",
+    "first_party_shipped: bundle:@deepseek-ai/dsh-web-app -> @deepseek-ai/dsh-web-app"
+  ],
+  "ablation_verdict": "consumer evidence narrowed 7 declared-but-unmeasured capabilities into 1 finding(s)"
+}
+exit=0
+## 4. npm pack + isolated install + behaviour of the installed copy
+### npm pack
+    npm pack --pack-destination C:\Users\MJ\DeepSeek\dsh-consumer-audit\.install-check
+npm notice
+npm notice package: dsh-consumer-audit@0.1.0
+npm notice Tarball Contents
+npm notice 1.1kB LICENSE
+npm notice 4.2kB README.md
+npm notice 3.2kB README.zh.md
+npm notice 66B cordis.patch.yml
+npm notice 10.8kB lib/audit.js
+npm notice 10.2kB lib/collect.js
+npm notice 6.2kB lib/index.js
+npm notice 1.2kB package.json
+npm notice 6.7kB skills/consumer-audit/SKILL.md
+npm notice Tarball Details
+npm notice name: dsh-consumer-audit
+npm notice version: 0.1.0
 npm notice filename: dsh-consumer-audit-0.1.0.tgz
-npm notice shasum: 8552afd07c64bc231396b16576ae65d1ba740cab
-npm notice integrity: sha512-8YSpsmth0HQpa[...]M8aAlV4UBrx9w==
+npm notice package size: 16.6 kB
+npm notice unpacked size: 43.7 kB
+npm notice shasum: 43216b9b8c724400573d8a66a32a87d38472bf2e
+npm notice integrity: sha512-3sOjFCd6DJ/ap[...]BPlgpxzRu+ooA==
 npm notice total files: 9
+npm notice
 dsh-consumer-audit-0.1.0.tgz
-
+exit=0
+tarball: C:\Users\MJ\DeepSeek\dsh-consumer-audit\.install-check\dsh-consumer-audit-0.1.0.tgz
+### tarball contents
+    tar -tzf C:\Users\MJ\DeepSeek\dsh-consumer-audit\.install-check\dsh-consumer-audit-0.1.0.tgz
 package/LICENSE
 package/lib/audit.js
 package/lib/collect.js
@@ -248,9 +428,14 @@ package/README.md
 package/README.zh.md
 package/skills/consumer-audit/SKILL.md
 package/cordis.patch.yml
+exit=0
+### install into isolated prefix
+    npm install --prefix C:\Users\MJ\DeepSeek\dsh-consumer-audit\.install-check --no-save --ignore-scripts C:\Users\MJ\DeepSeek\dsh-consumer-audit\.install-check\dsh-consumer-audit-0.1.0.tgz
 
-added 4 packages in 369ms
-
+added 4 packages in 6s
+exit=0
+### plugin checks (installed copy)
+    node C:\Users\MJ\DeepSeek\dsh-consumer-audit\tools\verify-plugin.mjs C:\Users\MJ\DeepSeek\dsh-consumer-audit\.install-check\node_modules\dsh-consumer-audit
 {
   "checks": [
     {
@@ -267,6 +452,11 @@ added 4 packages in 369ms
       "name": "plugin exposes apply()",
       "ok": true,
       "detail": "function"
+    },
+    {
+      "name": "shipped presets root resolution attempted",
+      "ok": true,
+      "detail": "C:\\Users\\MJ\\DeepSeek\\.asar-extract\\node_modules\\@deepseek-ai\\dsh-agent-presets\\presets"
     },
     {
       "name": "apply() returns its declared surface",
@@ -333,6 +523,16 @@ added 4 packages in 369ms
       "detail": 7
     },
     {
+      "name": "report lists the preset roots it searched",
+      "ok": true,
+      "detail": "[\"user preset:true\",\"shipped preset:true\"]"
+    },
+    {
+      "name": "shipped-preset root marked searched iff one was supplied",
+      "ok": true,
+      "detail": "supplied=true searched=true"
+    },
+    {
       "name": "renderer produced content blocks",
       "ok": true,
       "detail": "\"text\""
@@ -340,7 +540,7 @@ added 4 packages in 369ms
     {
       "name": "ablation action returns a verdict",
       "ok": true,
-      "detail": "consumer evidence narrowed 5 declared-but-unmeasured capabilities into 1 finding(s)"
+      "detail": "consumer evidence narrowed 7 declared-but-unmeasured capabilities into 1 finding(s)"
     },
     {
       "name": "disposer removed the tool",
@@ -353,9 +553,9 @@ added 4 packages in 369ms
       "detail": []
     }
   ],
-  "passed": 19,
-  "total": 19,
-  "execute_seconds": 1.4,
+  "passed": 22,
+  "total": 22,
+  "execute_seconds": 1.5,
   "findings": [
     "tool_never_invoked: continuity_recall (from @mj/dsh-continuity)"
   ],
@@ -366,50 +566,61 @@ added 4 packages in 369ms
     "first_party_shipped: bundle:@deepseek-ai/dsh-base -> @deepseek-ai/dsh-base",
     "first_party_shipped: bundle:@deepseek-ai/dsh-web-app -> @deepseek-ai/dsh-web-app"
   ],
-  "ablation_verdict": "consumer evidence narrowed 5 declared-but-unmeasured capabilities into 1 finding(s)"
+  "ablation_verdict": "consumer evidence narrowed 7 declared-but-unmeasured capabilities into 1 finding(s)"
 }
 exit=0
-## 4. independent recount of the reported finding
+## 5. independent recount of the reported finding
+### continuity_recall
+    node C:\Users\MJ\DeepSeek\dsh-consumer-audit\tools\recount-name.mjs continuity_recall
 {
   "name": "continuity_recall",
   "files_scanned": 15,
   "by_carrier": {
     "system/message": 9,
-    "request/header": 21,
+    "request/header": 22,
     "assistant/chunk": 27,
-    "assistant/message": 63,
-    "tool/call": 19,
-    "tool/result": 26,
-    "user/message": 28
+    "assistant/message": 70,
+    "tool/call": 23,
+    "tool/result": 32,
+    "user/message": 29
   },
   "tool_call_records_with_exact_name": 0
 }
+exit=0
+### continuity_state (control)
+    node C:\Users\MJ\DeepSeek\dsh-consumer-audit\tools\recount-name.mjs continuity_state
 {
   "name": "continuity_state",
   "files_scanned": 15,
   "by_carrier": {
-    "request/header": 37,
+    "request/header": 38,
     "assistant/chunk": 63,
-    "assistant/message": 143,
-    "tool/result": 31,
+    "assistant/message": 149,
+    "tool/result": 35,
     "system/message": 9,
-    "tool/call": 89,
+    "tool/call": 94,
     "tool-call-chunks": 49,
     "user/message": 11
   },
-  "tool_call_records_with_exact_name": 66
+  "tool_call_records_with_exact_name": 68
 }
+exit=0
+### set_retention_tier (control)
+    node C:\Users\MJ\DeepSeek\dsh-consumer-audit\tools\recount-name.mjs set_retention_tier
 {
   "name": "set_retention_tier",
   "files_scanned": 15,
   "by_carrier": {
-    "request/header": 37,
+    "request/header": 38,
     "assistant/chunk": 27,
-    "assistant/message": 60,
-    "tool/call": 22,
-    "tool/result": 17,
+    "assistant/message": 65,
+    "tool/call": 26,
+    "tool/result": 21,
     "tool-call-chunks": 6,
     "user/message": 2
   },
   "tool_call_records_with_exact_name": 6
 }
+exit=0
+## result
+all steps passed

@@ -60,13 +60,23 @@ With consumer counting disabled, the tool reports those capabilities as **unasse
 | Check | Result |
 |---|---|
 | Market entry requirements (manifest, patch shape, category, peer ranges, description) | 22/22 |
-| `npm pack` → install into an isolated prefix → re-run the checks against the installed copy | 19/19 |
+| Plugin contract and behaviour — default roots, explicit roots, and the installed copy | 22/22 in each context |
 | Plugin export shape matches plugins that load in this deployment | `export default { name, apply }` |
-| Reported `continuity_recall` as never invoked | Independently recounted over the same 15 session logs: 14 `tool/call` records contain the string, **0** carry it as the call name. Controls `continuity_state` 66, `set_retention_tier` 6 |
+| The report marks the shipped-presets root searched iff one was supplied | default roots → `searched:false` and 2 skills; explicit root → `searched:true` and 4 skills |
+| Reported `continuity_recall` as never invoked | Independently recounted over the same 15 session logs: 14 `tool/call` records contain the string, **0** carry it as the call name. Controls `continuity_state` 68, `set_retention_tier` 6 |
 
-Not verified: loading through the DSH loader after install. The package was exercised by calling its exported `apply()` against a recording context, not by starting a harness against it.
+Reproduce all of it with one command:
 
-One defect worth naming: the first version exported a bare function and its own verifier passed 15/15, because the verifier asserted a contract invented in this repository rather than the one two working plugins use. The shape was corrected and the verifier now asserts the real contract.
+```powershell
+.\tools\run-evidence.ps1
+```
+
+Not verified: loading through the DSH loader after install. The package is exercised by calling its exported `apply()` against a recording context, not by starting a harness against it.
+
+Two defects worth naming, both caught by running the checks rather than reading them:
+
+- The first version exported a bare function and its own verifier passed 15/15, because the verifier asserted a contract invented in this repository rather than the one two working plugins use. The shape was corrected and the verifier now asserts the real contract.
+- The first version never resolved the shipped-presets root, so an installed plugin silently reported 2 skills instead of 4. The report now states which roots it searched and the verifier asserts that the shipped root is marked searched exactly when one was supplied.
 
 ## Licence
 

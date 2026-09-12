@@ -1,0 +1,230 @@
+{
+  "collect_seconds": "1.43",
+  "console": {
+    "sessions_unreadable": 0,
+    "records_seen": 71865,
+    "zstd_available": true
+  },
+  "rows": [
+    {
+      "id": "image-admit",
+      "name": "@mj/dsh-image-admit",
+      "origin": "C:\\Users\\MJ\\.dsh\\profiles\\desktop\\cordis.patch.yml:25"
+    },
+    {
+      "id": "continuity",
+      "name": "@mj/dsh-continuity",
+      "origin": "C:\\Users\\MJ\\.dsh\\profiles\\desktop\\cordis.patch.yml:27"
+    },
+    {
+      "id": "mcp-local-vision",
+      "name": "@deepseek-ai/dsh-mcp-client",
+      "origin": "C:\\Users\\MJ\\.dsh\\profiles\\desktop\\cordis.patch.yml:29"
+    },
+    {
+      "id": "mcp-aoci",
+      "name": "@deepseek-ai/dsh-mcp-client",
+      "origin": "C:\\Users\\MJ\\.dsh\\profiles\\desktop\\cordis.patch.yml:46"
+    },
+    {
+      "id": "bundle:@deepseek-ai/dsh-base",
+      "name": "@deepseek-ai/dsh-base",
+      "origin": "C:\\Users\\MJ\\.dsh\\profiles\\desktop\\package.json#dsh.profile.bundles"
+    },
+    {
+      "id": "bundle:@deepseek-ai/dsh-web-app",
+      "name": "@deepseek-ai/dsh-web-app",
+      "origin": "C:\\Users\\MJ\\.dsh\\profiles\\desktop\\package.json#dsh.profile.bundles"
+    },
+    {
+      "id": "bundle:dshmarket",
+      "name": "dshmarket",
+      "origin": "C:\\Users\\MJ\\.dsh\\profiles\\desktop\\package.json#dsh.profile.bundles"
+    }
+  ],
+  "packages": {
+    "@mj/dsh-image-admit": {
+      "resolved": true,
+      "dir": "C:\\Users\\MJ\\.dsh\\profiles\\desktop\\node_modules\\@mj\\dsh-image-admit",
+      "scanned": 1,
+      "registrations": {
+        "effects": [
+          "<unnamed@index.js:6447>"
+        ]
+      }
+    },
+    "@mj/dsh-continuity": {
+      "resolved": true,
+      "dir": "C:\\Users\\MJ\\.dsh\\profiles\\desktop\\node_modules\\@mj\\dsh-continuity",
+      "scanned": 1,
+      "registrations": {
+        "tools": [
+          "set_retention_tier",
+          "continuity_recall",
+          "continuity_state"
+        ],
+        "promptSections": [
+          "mj:continuity-policy"
+        ],
+        "effects": [
+          "mj:continuity-policy",
+          "mj:continuity"
+        ]
+      }
+    },
+    "@deepseek-ai/dsh-mcp-client": {
+      "resolved": false
+    },
+    "@deepseek-ai/dsh-base": {
+      "resolved": false
+    },
+    "@deepseek-ai/dsh-web-app": {
+      "resolved": false
+    },
+    "dshmarket": {
+      "resolved": true,
+      "dir": "C:\\Users\\MJ\\.dsh\\profiles\\desktop\\node_modules\\dshmarket",
+      "scanned": 138,
+      "registrations": {
+        "effects": [
+          "dsh-market: dictionaries"
+        ],
+        "routes": [
+          "/dsh-market/api/v1/capabilities",
+          "/dsh-market/api/v1/updates",
+          "/dsh-market/api/v1/operations",
+          "/dsh-market/api/v1/rollback",
+          "/dsh-market/api/v1/restart",
+          "/dsh-market/backup",
+          "/dsh-market/restore",
+          "/dsh-market/webdav",
+          "/dsh-market/gist",
+          "/dsh-market/registry",
+          "/dsh-market/discovery-compatibility",
+          "/dsh-market/installed",
+          "/dsh-market/check",
+          "/dsh-market/bundle-order",
+          "/dsh-market/presets",
+          "/dsh-market/snapshots",
+          "/dsh-market/restore-snapshot",
+          "/dsh-market/delete-snapshot",
+          "/dsh-market/use-skin",
+          "/dsh-market/toggle",
+          "/dsh-market/note",
+          "/dsh-market/favorite",
+          "/dsh-market/groups",
+          "/dsh-market/status",
+          "/dsh-market/logs",
+          "/dsh-market/updates",
+          "/dsh-market/changelog",
+          "/dsh-market/migrate-source",
+          "/dsh-market/update",
+          "/dsh-market/setup-pnpm",
+          "/dsh-market/channel",
+          "/dsh-market/region",
+          "/dsh-market/github-proxy",
+          "/dsh-market/self-uninstall",
+          "/dsh-market/restart",
+          "/dsh-market/approve-builds",
+          "/dsh-market/cancel",
+          "/dsh-market/uninstall",
+          "/dsh-market/rollback",
+          "/dsh-market/install"
+        ]
+      }
+    }
+  },
+  "skills_on_disk": [
+    {
+      "name": "cordis-plugin-development",
+      "preset": "mj-prompt (user preset)",
+      "path": "C:\\Users\\MJ\\.dsh\\.agent-presets\\mj-prompt\\skills\\cordis-plugin-development\\SKILL.md"
+    },
+    {
+      "name": "editing-cordis-compositions",
+      "preset": "mj-prompt (user preset)",
+      "path": "C:\\Users\\MJ\\.dsh\\.agent-presets\\mj-prompt\\skills\\editing-cordis-compositions\\SKILL.md"
+    },
+    {
+      "name": "cordis-plugin-development",
+      "preset": "cordis (shipped preset)",
+      "path": "C:\\Users\\MJ\\DeepSeek\\.asar-extract\\node_modules\\@deepseek-ai\\dsh-agent-presets\\presets\\cordis\\skills\\cordis-plugin-development\\SKILL.md"
+    },
+    {
+      "name": "editing-cordis-compositions",
+      "preset": "cordis (shipped preset)",
+      "path": "C:\\Users\\MJ\\DeepSeek\\.asar-extract\\node_modules\\@deepseek-ai\\dsh-agent-presets\\presets\\cordis\\skills\\editing-cordis-compositions\\SKILL.md"
+    }
+  ],
+  "invocation_names": [
+    "ask_user_question",
+    "continuity_state",
+    "cordis_define",
+    "cordis_inspect_list",
+    "cordis_inspect_query",
+    "cordis_inspect_self",
+    "cordis_run",
+    "cordis_stop",
+    "cordis_undefine",
+    "create_goal",
+    "edit",
+    "get_goal",
+    "glob",
+    "grep",
+    "job_output",
+    "list_agents",
+    "mcp__aoci__aoci_header",
+    "mcp__aoci__aoci_maintain",
+    "mcp__aoci__aoci_overview",
+    "mcp__aoci__aoci_rules",
+    "mcp__aoci__aoci_update_entry",
+    "mcp__local_vision__analyze_image",
+    "mcp__local_vision__vision_status",
+    "mcp__paddleocr__ocr",
+    "office_file_preview",
+    "packing_analyze",
+    "present",
+    "preset_roster",
+    "pwsh",
+    "read",
+    "read_image",
+    "send_message",
+    "set_retention_tier",
+    "skill",
+    "subagent",
+    "todo_write",
+    "update_goal",
+    "web_fetch",
+    "web_search",
+    "write"
+  ]
+}
+
+=== REPORT ===
+{
+  "generated_from": {
+    "rows": 7,
+    "resolved_packages": 3,
+    "sessions_scanned": 15,
+    "consumer_counting": true
+  },
+  "counts_by_kind": {
+    "tool_never_invoked": 1
+  }
+}
+- [tool_never_invoked/consumer_verification_gap] continuity_recall (from @mj/dsh-continuity): the tool is registered but no invocation of it was found in the scanned session logs
+
+=== ABLATION ===
+{
+  "with_consumers": {
+    "tool_never_invoked": 1
+  },
+  "without_consumers": {},
+  "unassessed_without_consumers": 7,
+  "findings_only_with_consumer_evidence": [
+    "tool_never_invoked|continuity_recall (from @mj/dsh-continuity)"
+  ],
+  "findings_only_without": [],
+  "verdict": "consumer evidence narrowed 7 declared-but-unmeasured capabilities into 1 finding(s)",
+  "falsifier": "produce an input where a finding attributed to consumer evidence is not actually supported by an invocation count in the scanned logs"
+}

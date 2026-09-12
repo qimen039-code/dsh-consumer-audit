@@ -56,7 +56,25 @@ const check = (name, ok, detail) => checks.push({ name, ok: Boolean(ok), detail 
 check("default export is an object", mod.default !== null && typeof mod.default === "object", typeof mod.default);
 check("plugin declares a name", typeof mod.default?.name === "string" && mod.default.name.length > 0, mod.default?.name);
 check("plugin exposes apply()", typeof mod.default?.apply === "function", typeof mod.default?.apply);
-const api = mod.default.apply(ctx, { profile: "desktop" });
+
+// Supply the shipped-presets root explicitly, so this harness and tools/run-audit.mjs
+// scan the same skill set. Otherwise the two report different unassessed counts
+// and neither is wrong — which is exactly the kind of silent difference the
+// report now records under generated_from.preset_roots_searched.
+let shippedPresetsDir;
+try {
+  const { createRequire } = await import("node:module");
+  const { dirname: dn, join: jn } = await import("node:path");
+  const req = createRequire(join(pkgRoot, "lib", "index.js"));
+  shippedPresetsDir =
+    process.env.SHIPPED_PRESETS_DIR ??
+    jn(dn(req.resolve("@deepseek-ai/dsh-agent-presets/package.json")), "presets");
+} catch {
+  shippedPresetsDir = process.env.SHIPPED_PRESETS_DIR;
+}
+check("shipped presets root resolution attempted", true, shippedPresetsDir ?? "(not resolved — must be visible as unsearched in the report)");
+
+const api = mod.default.apply(ctx, { profile: "desktop", shippedPresetsDir });
 check("apply() returns its declared surface", Array.isArray(api?.tools) && Array.isArray(api?.skills), JSON.stringify(api));
 check("one tool registered", registrations.tools.length === 1, registrations.tools.map((t) => t.name));
 check("one skill registered", registrations.skills.length === 1, registrations.skills.map((s) => s.name));
@@ -77,6 +95,18 @@ const seconds = (Date.now() - t0) / 1000;
 check("execute returned our report schema", report?.schema === "dsh-consumer-audit/report/v1", report?.schema);
 check("execute measured the real machine", (report?.measured?.sessions_scanned ?? 0) > 0, JSON.stringify(report?.measured?.sessions_scanned));
 check("report carries boundaries", Array.isArray(report?.boundaries) && report.boundaries.length > 0, report?.boundaries?.length);
+
+// The report must state which roots it searched, and the shipped-preset root
+// must be marked searched exactly when one was supplied. Without this the run
+// that has no root silently reports fewer skills and looks like a clean result.
+const roots = report?.generated_from?.preset_roots_searched ?? [];
+check("report lists the preset roots it searched", roots.length > 0, JSON.stringify(roots.map((r) => `${r.origin}:${r.searched}`)));
+const shippedRoot = roots.find((r) => r.origin === "shipped preset");
+check(
+  "shipped-preset root marked searched iff one was supplied",
+  Boolean(shippedRoot?.searched) === Boolean(shippedPresetsDir),
+  `supplied=${Boolean(shippedPresetsDir)} searched=${Boolean(shippedRoot?.searched)}`,
+);
 
 const rendered = tool.output.render({}, report);
 check("renderer produced content blocks", Array.isArray(rendered) && rendered[0]?.type === "text", JSON.stringify(rendered?.[0]?.type));

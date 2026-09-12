@@ -16,6 +16,11 @@
       "detail": "function"
     },
     {
+      "name": "shipped presets root supplied for this run",
+      "ok": true,
+      "detail": "C:\\Users\\MJ\\DeepSeek\\.asar-extract\\node_modules\\@deepseek-ai\\dsh-agent-presets\\presets"
+    },
+    {
       "name": "apply() returns its declared surface",
       "ok": true,
       "detail": "{\"tools\":[\"consumer_audit\"],\"skills\":[\"consumer-audit\"]}"
@@ -87,7 +92,7 @@
     {
       "name": "ablation action returns a verdict",
       "ok": true,
-      "detail": "consumer evidence narrowed 5 declared-but-unmeasured capabilities into 1 finding(s)"
+      "detail": "consumer evidence narrowed 7 declared-but-unmeasured capabilities into 1 finding(s)"
     },
     {
       "name": "disposer removed the tool",
@@ -100,9 +105,9 @@
       "detail": []
     }
   ],
-  "passed": 19,
-  "total": 19,
-  "execute_seconds": 1.36,
+  "passed": 20,
+  "total": 20,
+  "execute_seconds": 1.45,
   "findings": [
     "tool_never_invoked: continuity_recall (from @mj/dsh-continuity)"
   ],
@@ -113,5 +118,5 @@
     "first_party_shipped: bundle:@deepseek-ai/dsh-base -> @deepseek-ai/dsh-base",
     "first_party_shipped: bundle:@deepseek-ai/dsh-web-app -> @deepseek-ai/dsh-web-app"
   ],
-  "ablation_verdict": "consumer evidence narrowed 5 declared-but-unmeasured capabilities into 1 finding(s)"
+  "ablation_verdict": "consumer evidence narrowed 7 declared-but-unmeasured capabilities into 1 finding(s)"
 }

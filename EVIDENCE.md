@@ -40,7 +40,8 @@
 3. **第一方 `@deepseek-ai/*` 包不搜索。** 它们随 harness 发行（在 `app.asar` 内），报告记为 `first_party_shipped`，**不是**"缺失"。
 4. **扫描是启发式的。** 目前的模式集：`tools.register` / `provide(` / `.section(` / `skills.register` / `commands.register` / `webServer.register` / `ctx.effect(`。用其他方式注册的包会被误报，报告里写明了模式集。
 5. **包裹既有服务方法的行不做判定。** `@mj/dsh-image-admit` 就是这种：它改的是 `llm.resolveModelInfo`，不注册任何新能力，调用计数判断不了它。报告记 `intercepts_host_behaviour`，**不是**缺陷。
-6. **报告不含语义判断。** 一条 `tool_never_invoked` 不等于插件写得差。
+6. **报告会写出它搜索了哪些根。** `generated_from.preset_roots_searched` 逐条给出 `origin / dir / searched`。**没被解析到的根会让它的 skill 从报告里消失——所以那一行必须显示 `searched:false`，而不是让报告安静地少几条。** 这条是实测发现缺陷后补的，见 §6.3。
+7. **计数会随会话增长漂移。** 同一台机器同一个工具，`continuity_state` 从 66 涨到 68，只是因为本会话又调用了两次。数字只对"运行那一刻的日志集合"成立。
 
 ---
 
@@ -151,9 +152,36 @@ export default { name: NAME, inject: [...], apply(ctx) { ... } };
 
 修后 19/19。**这条留在这里，因为它比任何正例都更能说明 §2 的判据为什么必须落在产物上。**
 
-### 6.2 没有做的清理
+### 6.3 我用一个不成立的理由删了证据（本轮）
+
+我判定 `tools/audit-run-1.txt` 是**"修好之前那一轮、含坏掉的消融数字"**，据此删除。删除后核对，发现这个理由**是错的**：
+
+```
+audit-run-1.txt 里的 verdict: "consumer evidence narrowed 7 ... into 1 finding(s)"
+那正是修好之后的措辞；坏掉那版说的是 "changed nothing"
+```
+
+它是一轮**有效**运行，与后来那次只差 `unassessed` 的 7 vs 5。**我已经恢复它**（`tools/audit-run-1.txt`）。
+
+但这个错误操作顺带暴露了一个**真缺陷**：两次运行差 2，是因为 `lib/index.js` **从不给 `shippedPresetsDir` 设默认值**，只读 config。于是装好的插件在没有任何配置时会**静默漏掉随 harness 发行的 preset 里的全部 skill**（4 → 2），而报告里看不出少了什么。
+
+修法两条：
+1. `lib/index.js` 自己用 `createRequire` 去解析 `@deepseek-ai/dsh-agent-presets`，解析得到就用；
+2. **无论成功与否，报告都写出搜索了哪些根**（`generated_from.preset_roots_searched`，逐条 `searched: true/false`），并加了一条验证：**shipped 根被标记为 searched，当且仅当确实提供了它**。
+
+修后两个运行上下文一致（都是 7）。**这条的价值在于：差点被我用一个编造的理由"清理"掉的，正是能暴露这个静默缺陷的那个文件。**
+
+### 6.4 一个被对照否掉的测试
+
+我想用 `dsh --profile desktop --patch <overlay> --dump-config` 证明 loader 能解析我的包。先跑了对照：插一行**不可能解析**的包名，`--dump-config` **照样成功组合并原样输出**。
+
+⇒ `--dump-config` **不校验解析**，只做组合。这个测试**证明不了任何事**，因此不作为证据。它顺带确认了一件小事：loader 会把绝对路径规范化为 `file:///C:/...`。
+
+### 6.5 没有做的清理
 
 本次**没有**删除用户既有 profile 的任何行、插件或 skill。工具只读，不写任何东西。
+
+**特别地：`continuity_recall` 缺少消费者这条 finding，我没有据此删除或改动 `@mj/dsh-continuity`。** 报告给出事实，是否删是你的决定。
 
 ---
 
@@ -163,26 +191,29 @@ export default { name: NAME, inject: [...], apply(ctx) { ... } };
 判据：  ① 市场 contributing.md 的机械要求全部可本地核验；
         ② npm pack 出的 tarball 装进隔离前缀后，从装好的副本再跑一遍插件检查必须全过；
         ③ 插件导出形状必须与"本机能加载的插件"一致，而不是与本验证器一致；
-        ④ tool_never_invoked 的 finding 必须能被独立重数推翻。
-执行：  node tools/verify-market-manifest.mjs
-        node tools/verify-plugin.mjs                                  (源码树)
+        ④ 报告必须写出它搜索了哪些根；shipped 根被标记 searched 当且仅当确实提供了它；
+        ⑤ tool_never_invoked 的 finding 必须能被独立重数推翻。
+执行：  powershell -File tools\run-evidence.ps1        （一条命令重跑全部五节）
+        node tools\verify-market-manifest.mjs
+        node tools\verify-plugin.mjs                    （默认根 / 显式根 / 装好的副本，三种上下文）
         npm pack --pack-destination .install-check
         npm install --prefix .install-check --no-save --ignore-scripts <tgz>
-        node tools/verify-plugin.mjs .install-check/node_modules/dsh-consumer-audit
-        node tools/recount-name.mjs continuity_recall | continuity_state | set_retention_tier
-观测：  ① 22/22 通过
-        ② tarball 9 个文件；隔离安装 added 4 packages；装好的副本 19/19 通过
+        node tools\recount-name.mjs continuity_recall | continuity_state | set_retention_tier
+观测：  ① 22/22
+        ② tarball 9 个文件；隔离安装 added 4 packages；装好的副本 22/22
         ③ 契约由 @mj/dsh-continuity(export default { name, inject, apply }) 与
-           @mj/dsh-image-admit 读出；修形状后 19/19（修之前是 15/15 的假通过，见 §6.1）
-        ④ continuity_recall: tool/call 含字符串 14 条，精确调用名 0 条
-           continuity_state 66 条；set_retention_tier 6 条
-归类：  applied_verified（工具逻辑、安装性、市场清单要求、导出形状）
-        consumer_verification_gap（**未验证**：装好后由 DSH loader 真实加载并出现在模型工具表里）
+           @mj/dsh-image-admit 读出；修形状前是 15/15 的假通过（见 §6.1）
+        ④ 默认根：shipped preset 行 searched=false；显式根：searched=true 且 skill 数 2 → 4
+        ⑤ continuity_recall: tool/call 含字符串 14 条，精确调用名 0 条
+           continuity_state 68 条（本会话增长前为 66）；set_retention_tier 6 条
+        一节不通过脚本即 exit 1：`all steps passed` / `FAILED: ...`
+归类：  applied_verified（工具逻辑、安装性、市场清单要求、导出形状、根搜索可见性）
+        stopped（**未验证**：装好后由 DSH loader 真实启动加载）
 边界：  没有在真实 profile 上执行 dsh plugin add（会改动用户活动插件树，AGENTS.md §2 记录过
         未声明的本地包会让整棵树加载失败）；没有启动 harness 端到端验证；
-        扫描只覆盖本机存在的 15 个会话文件。
+        扫描只覆盖本机存在的 15 个会话文件；计数随会话增长漂移。
 ```
 
-`stopped` 与 `applied` 不混用：**loader 加载这一环是 `stopped`，不是成功。**
+`stopped` 与 `applied` 不混用：**loader 启动加载这一环是 `stopped`，不是成功。**
 
-原始日志见 `EVIDENCE-run.log`。
+原始日志见 `EVIDENCE-run.log`（由 `tools/run-evidence.ps1` 生成，可重复执行）。
