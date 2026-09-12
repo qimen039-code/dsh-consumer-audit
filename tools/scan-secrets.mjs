@@ -27,13 +27,24 @@ const RULES = [
   { id: "private-notes-path", why: "personal document path", re: /Documents[\\/]Codex|Codex[\\/]Archives/gi },
 ];
 
-const files = execFileSync("git", ["ls-files"], { encoding: "utf8" })
+// A rule table has to contain the strings it looks for, so this file would
+// always match itself. The exclusion is one file wide and it is printed in the
+// report rather than applied quietly.
+const SELF = "tools/scan-secrets.mjs";
+
+// Tracked files PLUS untracked files that are not gitignored. Scanning only
+// `git ls-files` reads the index, so a newly written file is invisible until it
+// is staged, and the gate passes on exactly the content about to be added.
+const files = execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard"], { encoding: "utf8" })
   .split("\n")
   .map((s) => s.trim())
   .filter(Boolean);
 
+const scanned = files.filter((f) => f.replaceAll("\\", "/") !== SELF);
+const excluded = files.filter((f) => f.replaceAll("\\", "/") === SELF);
+
 const findings = [];
-for (const file of files) {
+for (const file of scanned) {
   let text;
   try {
     text = readFileSync(file, "utf8");
@@ -71,9 +82,10 @@ const byFile = {};
 for (const f of findings) byFile[f.file] = (byFile[f.file] ?? 0) + 1;
 
 if (asJson) {
-  console.log(JSON.stringify({ files_scanned: files.length, total_hits: findings.length, by_rule: byRule, by_file: byFile, findings }, null, 2));
+  console.log(JSON.stringify({ files_considered: files.length, files_scanned: scanned.length, files_excluded: excluded, total_hits: findings.length, by_rule: byRule, by_file: byFile, findings }, null, 2));
 } else {
-  console.log(`scanned ${files.length} tracked files, ${findings.length} hits`);
+  console.log(`scanned ${scanned.length} of ${files.length} files, ${findings.length} hits`);
+for (const f of excluded) console.log(`  excluded: ${f} (its own rule table)`);
   console.log("");
   for (const [rule, n] of Object.entries(byRule).sort((a, b) => b[1] - a[1])) console.log(`  ${String(n).padStart(4)}  ${rule}`);
   console.log("");
