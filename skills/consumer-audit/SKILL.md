@@ -94,7 +94,7 @@ description: Use when a task asserts that work is complete, or when auditing whe
 | 报告里的项 | 含义 | 该怎么办 |
 |---|---|---|
 | `tool_never_invoked` | 注册了，日志里 0 次调用 | 死能力候选，去问"谁该消费它" |
-| `skill_never_loaded` | SKILL.md 在盘上，但没有任何会话加载过 | 要么没人用，要么它挂在没人用的预设下 |
+| `skill_never_loaded` | SKILL.md 在盘上，但没有任何会话加载过 | 要么它从未被加载，要么它挂在从未被使用的预设下 |
 | `prompt_only_capability` | 只有 prompt section，没有工具/服务/路由 | 说明书，不是机制 |
 | `row_without_capability` | 行挂着，包在，但没有任何注册或 effect 站点 | 挂了个空壳 |
 | `duplicate_prompt_section` | 两个包注册同名段 | 第二份真相，必须去重 |

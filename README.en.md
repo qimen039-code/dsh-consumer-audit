@@ -2,15 +2,15 @@
 
 English | [中文](README.md)
 
-Your plugins register capabilities. Whether anything ever uses them is not reported anywhere. This plugin reports it.
+A plugin's tools and skills are there for the model to call. Registering one does not mean the model ever calls it, and nothing reports on that. This plugin does.
 
 ## The problem
 
-A DSH plugin can register tools, skills, services and routes with the host. Registering a capability is not the same as something using it.
+A DSH plugin can register tools, skills, services and routes with the host. Registering a capability is not the same as the model calling it.
 
 A plugin can quietly register three tools at startup and two of them may never be called across dozens of sessions. The code is there, it was tested, it loads. No task ever reaches those two. There is a subtler case as well: a plugin that only wraps an existing host method registers nothing at all, so a listing makes it look idle while it is in fact working.
 
-`consumer_audit` turns this into a list you can check. It reads the active profile's composition rows, resolves each row to the installed package, scans that package for registration sites, counts how often each registered tool and skill appears in the session logs under `DSH_HOME`, and reports the ones whose count is zero.
+`consumer_audit` turns this into a report the model can read. It reads the active profile's composition rows, resolves each row to the installed package, scans that package for registration sites, counts how often each registered tool and skill appears in the session logs under `DSH_HOME`, and reports the ones whose count is zero.
 
 ## What a report looks like
 
@@ -48,9 +48,11 @@ Every finding carries an evidence locator, a gap classification, and a falsifier
 
 Read the last three fields together. A finding says that this scan saw no consumer, and it ships the observation that would overturn it. It does not say the plugin is bad.
 
-## When you would use it
+## When the model runs it
 
-After installing a plugin, to see whether it is doing anything. When you suspect a feature was written but never wired up. Before cleaning a profile, to see which removals would go unnoticed. When writing a plugin, to see which parts nobody calls.
+The model runs this check in a few situations: a plugin was just installed and it needs to know whether its capabilities are actually reached; a feature is suspected of having been written but never wired up; a profile is about to be cleaned and it needs to know which removals would go unnoticed; a plugin is being written and it needs to know which parts nothing calls.
+
+Each of these is the model's own call, not a command anyone types.
 
 ## Install
 
@@ -65,6 +67,8 @@ If you place the package into a profile by hand, mind where it goes. The DSH loa
 Node 22.15 or newer is required, because session logs are multi-frame zstd.
 
 ## Reading the report
+
+The model that called the tool reads the report, and it stays in the transcript. There are six fields.
 
 | Field | Meaning |
 | --- | --- |
