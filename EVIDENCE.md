@@ -265,9 +265,9 @@ PackageOverlayNotFoundError
 
 它只认「Desktop 安装 + **活动 Profile 自己的** node_modules」。本机的 `@mj/*` 恰好同时存在于两层，我照抄错了层次。
 
-**缺陷 2：读未声明的 ctx 属性会抛异常。** `cannot get property "config" without inject`。我写过一句"防御性"的 `ctx.config` 回退，在 Cordis 里它不是安全网，是启动即失败。
+**缺陷 2：读未声明的 ctx 属性会抛异常。** `cannot get property "config" without inject`。我写过一句"防御性"的 `ctx.config` 回退，在 Cordis 里它没有起到保护作用，反而让启动直接失败。
 
-**缺陷 3：不声明 `inject` 时 `ctx.get("tools")` 返回 undefined。** 加载回执显示 `tools=[] skills=[]`：**插件装上了，什么都没注册**。这正是本项目要防的那类伪实现，文件在、能加载、零能力。
+**缺陷 3：不声明 `inject` 时 `ctx.get("tools")` 返回 undefined。** 加载回执显示 `tools=[] skills=[]`：**插件装上了，但什么都没注册**。这正是本项目要防的那类伪实现，文件在、能加载、零能力。
 
 **缺陷 4：`apply` 的返回值会被当成 effect 执行。** 我返回了一个描述对象 `{ tools, skills }`，宿主报 `TypeError: Invalid effect`，**整棵插件树启动失败**。Cordis 只接受函数、迭代器，或什么都不返回。
 
@@ -275,7 +275,7 @@ PackageOverlayNotFoundError
 
 ```
 [consumer-audit] LOAD-RECEIPT profile=desktop ctxTools=present disposers=2
-dsh web: http://127.0.0.1:44001/?token=...
+dsh web: http://127.0.0.1:<port>/?token=<redacted>
 [status: running]
 ```
 
