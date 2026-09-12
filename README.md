@@ -78,12 +78,22 @@ dsh plugin --profile <profile> add github:qimen039-code/dsh-consumer-audit
 | `row_without_capability` | 行已挂载、包也解析到了，但它什么都没注册 |
 | `duplicate_prompt_section` | 两个包注册了同名的提示词段 |
 | `package_unresolved` | 这一行的包既不在 profile 里，也不属于随 harness 发行的那批 |
+| `tool_never_delivered` | 被调用过，但每次返回都带 isError |
+| `skill_never_delivered` | 同上，针对 skill |
 
 另有两类结果记为 notes，不做判定。包名以 `@deepseek-ai/` 开头的行随 harness 发行，搜索为空说明不了任何事。包裹既有服务方法的包不注册新能力，调用计数判断不了它。
 
-报告还有一节 `consumed`，列出确实被调用过的能力以及各自的次数。finding 回答"是不是死的"，`consumed` 回答"用了多少"。字段 `generated_from.capability_names` 标出每个包的能力名是它自己声明的还是扫描推断的，前者权威，后者可能读错。
+报告还有一节 `consumed`，逐条给出 `attempts` / `failed` / `succeeded`。三层是分开的：注册了（声明）、被调用过（有调用记录）、送达了（配对的返回不带 isError）。报告只走到送达这一层。字段 `generated_from.capability_names` 标出每个包的能力名是它自己声明的还是扫描推断的，前者权威，后者可能读错。
 
-**一条必须分清的界线**：调用次数只说明它被调用过，不说明它设计的内容真的生效了。日志里没有能证明后者的确定性信号，报告也不声称这一点。
+**内容有没有按设计生效，是模型该判断的事，不是这个插件该判断的事。** 插件在这里只做一件事：把记录交出来。
+
+会话日志是多帧 zstd，模型没法用普通读取打开。所以工具多了一个入口：
+
+```json
+{"action": "evidence", "name": "some_tool", "limit": 5}
+```
+
+它返回该能力最近若干次调用的参数和返回正文，以及每次的 `isError`。模型拿它去对照这个能力本该做什么，再下判断。插件不替它下这个判断，也不假装自己能下。
 
 ## 边界
 

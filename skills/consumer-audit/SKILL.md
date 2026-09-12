@@ -94,6 +94,8 @@ description: Use when a task asserts that work is complete, or when auditing whe
 | 报告里的项 | 含义 | 该怎么办 |
 |---|---|---|
 | `tool_never_invoked` | 注册了，日志里 0 次调用 | 死能力候选，去问"谁该消费它" |
+| `tool_never_delivered` | 被调用过，但每一次返回都带 isError | 调用了却什么都没送到，比从不调用更值得看 |
+| `skill_never_delivered` | 同上，针对 skill | 加载请求发了，skill 正文没送到 |
 | `skill_never_loaded` | SKILL.md 在盘上，但 skill 工具从未以它的名字被调用过 | 看 detail：被列进目录多少次、加载过多少次，两者是不同的事实 |
 | `prompt_only_capability` | 只有 prompt section，没有工具/服务/路由 | 说明书，不是机制 |
 | `row_without_capability` | 行挂着，包在，但没有任何注册或 effect 站点 | 挂了个空壳 |
@@ -102,12 +104,32 @@ description: Use when a task asserts that work is complete, or when auditing whe
 | `intercepts_host_behaviour` | 包裹既有服务方法，不注册新能力 | 不是缺陷；调用计数判断不了它 |
 | `skill_outside_searched_roots` | 被列进目录，但没有任何被搜索的根里有它的 SKILL.md | 项目级/用户级 skill 根不在扫描范围内 |
 
-报告还有一节 `consumed`，列出**确实被调用过**的能力及其次数。finding 回答"是不是死的"，`consumed` 回答"用了多少"。
+报告还有一节 `consumed`，逐条给出 `attempts` / `failed` / `succeeded`。finding 回答"是不是死的"，`consumed` 回答"用了几次、成了几次"。
+
+**三层必须分开**：注册了（声明）→ 被调用过（有调用记录）→ 送达了（配对的返回不带 isError）。报告只走到第三层。
 | `first_party_shipped` | 随 harness 一起发行 | **不是缺陷** |
 
 **判据：服务必须有消费者。** 报告只测量，不做质量判断；一条 `tool_never_invoked` 不等于插件写得差，它只说明这条能力目前没有可观察的消费者。
 
-**一条必须分清的界线**：调用次数只说明它**被调用过**，不说明它**设计的内容真的生效了**。日志里没有能证明后者的确定性信号，报告也不声称这一点。想验证内容生效，要另设任务级判据。
+### 5.1 内容有没有按设计生效，由你判断，不由工具判断
+
+这句话是分工，不是免责。插件负责把记录交出来，判断由做这件事的模型下。
+
+会话日志是多帧 zstd，模型没法用普通读取打开它。所以插件提供入口：
+
+```
+consumer_audit  action="evidence"  name="<工具或 skill 名>"  limit=5
+```
+
+它返回该能力最近若干次调用的**参数**和**返回正文**，以及每次的 `isError`。拿到之后按这个顺序做：
+
+1. **读它本该做什么。** 打开该插件或 skill 的源码与正文，写下它设计的目标行为。
+2. **读它实际做了什么。** 看参数是不是它被设计来接收的，看返回正文是不是它被设计来产出的。
+3. **对齐或不对齐，都要给依据。** 指出是哪一次调用、哪个字段、哪一段输出支持你的判断。
+4. **写下这次判断的边界。** 你看的是被扫描的那些日志；没看到的会话里它可能表现不同。
+5. **不确定就说不确定。** 参数对但输出被截断、或输出看起来对但缺少下游结果，都要如实讲。
+
+**禁止的反向操作**：不要因为"它被调用过"就说它生效了，也不要因为"输出看起来像那么回事"就跳过第 1 步。
 
 复核纪律：报告给出的每一条都要能被**独立重数**推翻。别信工具的自述，去看日志。
 

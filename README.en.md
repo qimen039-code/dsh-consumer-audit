@@ -78,12 +78,22 @@ There are six finding fields.
 | `row_without_capability` | The row is mounted and the package resolves, but it registers nothing |
 | `duplicate_prompt_section` | Two packages register the same prompt section name |
 | `package_unresolved` | A row whose package is neither installed in the profile nor first-party |
+| `tool_never_delivered` | Called, and every result came back with isError |
+| `skill_never_delivered` | The same, for a skill |
 
 Two results are recorded as notes instead of findings, because invocation counting cannot judge them. A row whose package name starts with `@deepseek-ai/` ships inside the harness rather than the profile, so an empty search says nothing about it. A package that wraps an existing service method registers no new capability and has no tool to count.
 
-A separate `consumed` section lists the capabilities that were used, with their counts. A finding answers whether something is dead; `consumed` answers how much it is used. The field `generated_from.capability_names` marks whether each package's names were declared by the package or inferred by scanning; the declared ones are authoritative and the scanned ones can be misread.
+A separate `consumed` section gives `attempts`, `failed` and `succeeded` for each capability. Three levels are kept apart: registered, called, and delivered, where delivered means the paired result did not carry isError. The report stops at delivered. The field `generated_from.capability_names` marks whether each package's names were declared by the package or inferred by scanning; the declared ones are authoritative and the scanned ones can be misread.
 
-One line has to stay clear: a count shows that something was called or loaded. It does not show that what it was designed to do took effect. No deterministic log signal establishes that, and the report never claims it.
+Whether a capability did what it was designed to do is a judgement for the model, not for this plugin. The plugin's part is to hand over the records.
+
+A session log is multi-frame zstd, so a model cannot open it with a plain file read. The tool therefore has a second entry point:
+
+```json
+{"action": "evidence", "name": "some_tool", "limit": 5}
+```
+
+It returns the arguments passed to that capability and the text that came back, for the most recent calls, with the isError flag on each. The model reads those against what the capability is supposed to do and draws the conclusion. The plugin does not draw it and does not pretend to.
 
 ## Boundaries
 
