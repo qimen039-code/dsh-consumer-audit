@@ -1,0 +1,111 @@
+{
+  "passed": 22,
+  "total": 22,
+  "checks": [
+    {
+      "name": "package.json declares dsh.bundle.patch",
+      "ok": true,
+      "detail": "./cordis.patch.yml"
+    },
+    {
+      "name": "cordis.patch.yml exists next to package.json",
+      "ok": true,
+      "detail": "C:\\Users\\MJ\\DeepSeek\\dsh-consumer-audit\\cordis.patch.yml"
+    },
+    {
+      "name": "patch has the insert list shape",
+      "ok": true
+    },
+    {
+      "name": "patch row name matches the package name",
+      "ok": true,
+      "detail": "dsh-consumer-audit"
+    },
+    {
+      "name": "main entry exists",
+      "ok": true
+    },
+    {
+      "name": "entry file present",
+      "ok": true,
+      "detail": "C:\\Users\\MJ\\DeepSeek\\dsh-consumer-audit\\market\\data__plugins__qimen039-code__dsh-consumer-audit.yml"
+    },
+    {
+      "name": "entry url is a github repo url",
+      "ok": true,
+      "detail": "https://github.com/qimen039-code/dsh-consumer-audit"
+    },
+    {
+      "name": "entry name is owner/repo",
+      "ok": true,
+      "detail": "qimen039-code/dsh-consumer-audit"
+    },
+    {
+      "name": "entry url and name agree",
+      "ok": true,
+      "detail": "https://github.com/qimen039-code/dsh-consumer-audit vs qimen039-code/dsh-consumer-audit"
+    },
+    {
+      "name": "category is one of the allowed values",
+      "ok": true,
+      "detail": "dev"
+    },
+    {
+      "name": "description.en present",
+      "ok": true,
+      "detail": "Audits a DSH profile for capabilities no"
+    },
+    {
+      "name": "description.en ends with a period",
+      "ok": true,
+      "detail": "r completion claims."
+    },
+    {
+      "name": "description containing ': ' is quoted",
+      "ok": true,
+      "detail": "'Audits a DS"
+    },
+    {
+      "name": "described tool name exists in source",
+      "ok": true
+    },
+    {
+      "name": "described skill name exists in source",
+      "ok": true
+    },
+    {
+      "name": "peer @deepseek-ai/cordis resolves against a stable line",
+      "ok": true,
+      "detail": "^4.0.1"
+    },
+    {
+      "name": "peer @deepseek-ai/dsh-tools has an explicit prerelease branch",
+      "ok": true,
+      "detail": ">=0.1.0-rc.6 <0.1.0 || >=0.1.0-rc.6 <0.2.0-0"
+    },
+    {
+      "name": "peer @deepseek-ai/dsh-skill has an explicit prerelease branch",
+      "ok": true,
+      "detail": ">=0.1.0-rc.6 <0.1.0 || >=0.1.0-rc.6 <0.2.0-0"
+    },
+    {
+      "name": "peer @deepseek-ai/dsh-tools does not use a bare >= range",
+      "ok": true,
+      "detail": ">=0.1.0-rc.6 <0.1.0 || >=0.1.0-rc.6 <0.2.0-0"
+    },
+    {
+      "name": "peer @deepseek-ai/dsh-skill does not use a bare >= range",
+      "ok": true,
+      "detail": ">=0.1.0-rc.6 <0.1.0 || >=0.1.0-rc.6 <0.2.0-0"
+    },
+    {
+      "name": "official @deepseek-ai packages are peers, not dependencies",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "no install-time scripts",
+      "ok": true
+    }
+  ]
+}

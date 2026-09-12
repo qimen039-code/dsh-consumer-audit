@@ -1,0 +1,3 @@
+- insert:
+    - id: consumer-audit
+      name: dsh-consumer-audit

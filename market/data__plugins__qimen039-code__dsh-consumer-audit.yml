@@ -1,0 +1,30 @@
+# Market submission for awesome-dsh-plugin.
+#
+# Pre-filled for the GitHub account this machine is authenticated as
+# (gh auth status -> qimen039-code). If you publish under a different owner or a
+# different repository name, change it in THREE places: `url` below, `name`
+# below, and this file's own filename.
+#
+# Steps:
+#   1. Create the repository that `url` points at and push this package to its
+#      root. Add the `dsh-plugin` topic.
+#   2. Wait past the 1-day repo-age bar in contributing.md. CI checks it, and a
+#      repository created minutes before the PR is the one thing that will be
+#      rejected mechanically.
+#   3. Open ONE pull request against awesome-dsh-plugin/awesome-dsh-plugin that
+#      adds exactly this file as data/plugins/qimen039-code__dsh-consumer-audit.yml.
+#      Nothing else there needs editing; both READMEs are generated from
+#      data/plugins/*.yml.
+#
+# CI runs, in order: entry count (<=3) -> dsh.bundle present in the repo's
+# package.json -> repo age -> awesome-lint and the site build.
+#
+# `description.en` is read as a claim about the plugin and checked against the
+# code. It contains ": " so it is quoted, per contributing.md.
+
+url: https://github.com/qimen039-code/dsh-consumer-audit
+name: qimen039-code/dsh-consumer-audit
+category: dev
+description:
+  en: 'Audits a DSH profile for capabilities nothing consumes: it inventories the declared composition rows, scans each installed package for its registration sites, counts how often those tools and skills appear in the session logs, and reports the ones with no observed consumer. Ships a skill that fixes the evidence-chain format for completion claims.'
+  zh: '审计 DSH profile 里没有消费者的能力：清点已声明的组成行，扫描每个已安装包的注册点，统计这些工具与 skill 在会话日志里出现的次数，报告从未被观察到消费者的那些；并附一份固定「完成声明」证据链格式的 skill。'

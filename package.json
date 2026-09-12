@@ -1,0 +1,48 @@
+{
+  "name": "dsh-consumer-audit",
+  "version": "0.1.0",
+  "description": "Audit a DSH profile for capabilities nothing consumes, and record completion claims with the evidence that supports them.",
+  "type": "module",
+  "license": "MIT",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./audit": "./lib/audit.js",
+    "./collect": "./lib/collect.js"
+  },
+  "files": [
+    "lib",
+    "skills",
+    "cordis.patch.yml",
+    "README.md",
+    "README.zh.md"
+  ],
+  "keywords": [
+    "dsh-plugin",
+    "dsh",
+    "audit",
+    "evidence",
+    "pseudo-implementation"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MJ/dsh-consumer-audit.git"
+  },
+  "engines": {
+    "node": ">=22.15.0"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-tools": ">=0.1.0-rc.6 <0.1.0 || >=0.1.0-rc.6 <0.2.0-0",
+    "@deepseek-ai/dsh-skill": ">=0.1.0-rc.6 <0.1.0 || >=0.1.0-rc.6 <0.2.0-0"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/dsh-tools": { "optional": true },
+    "@deepseek-ai/dsh-skill": { "optional": true }
+  }
+}
