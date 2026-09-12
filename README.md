@@ -1,55 +1,57 @@
 # dsh-consumer-audit
 
-A DeepSeek Harness plugin that reports which capabilities in a profile have no observed consumer, and a skill that fixes the format for claiming work is complete.
+[English](README.en.md) | 中文
 
-## What it does
+一个 DeepSeek Harness 插件：报告 profile 里哪些能力没有可观察的消费者，并附一份固定「完成声明」写法的 skill。
 
-The plugin registers one model tool and one skill.
+## 它做什么
 
-`consumer_audit` reads the active profile's composition rows, resolves each row to its installed package, scans that package for registration sites, and counts how often each registered tool and skill appears in the session logs under `DSH_HOME`. It reports the ones with no observed consumer.
+插件注册一个模型工具和一个 skill。
 
-The skill, `consumer-audit`, supplies the wording rules for a completion claim: a boundary statement, a five-field evidence chain, a gap classification, and the observation that would falsify the claim.
+`consumer_audit` 读取活动 profile 的组合行，把每一行解析到它安装的包，扫描该包的注册站点，再统计每个已注册工具与 skill 在 `DSH_HOME` 下会话日志里出现的次数，报告其中没有观察到消费者的那些。
 
-The tool does not grade plugins. A finding says that a capability has no observed consumer, not that the plugin behind it is bad.
+skill 名为 `consumer-audit`，给出「完成」的写法规则：边界声明、五栏证据链、缺口归类，以及什么观测会推翻这条声明。
 
-## Install
+工具不给插件打分。一条 finding 说明某项能力没有可观察的消费者，不说明背后的插件不好。
+
+## 安装
 
 ```sh
 dsh plugin --profile <profile> add github:qimen039-code/dsh-consumer-audit
 ```
 
-Node 22.15 or newer is required, because session logs are multi-frame zstd.
+需要 Node 22.15 或更新版本，因为会话日志是多帧 zstd。
 
-## Reading the report
+## 怎么读报告
 
-| Field | Meaning |
+| 字段 | 含义 |
 | --- | --- |
-| `tool_never_invoked` | The tool is registered, and the scanned logs contain no call to it |
-| `skill_never_loaded` | `SKILL.md` exists on disk, and no scanned session loaded it |
-| `prompt_only_capability` | The package registers prompt text and nothing else |
-| `row_without_capability` | The row is mounted and the package resolves, but it registers nothing |
-| `duplicate_prompt_section` | Two packages register the same prompt section name |
-| `package_unresolved` | A row whose package is neither installed in the profile nor first-party |
+| `tool_never_invoked` | 工具已注册，被扫描的日志里没有对它的调用 |
+| `skill_never_loaded` | 盘上有 `SKILL.md`，被扫描的会话没有加载过 |
+| `prompt_only_capability` | 这个包只注册提示词 |
+| `row_without_capability` | 行已挂载、包也解析到了，但它什么都没注册 |
+| `duplicate_prompt_section` | 两个包注册了同名的提示词段 |
+| `package_unresolved` | 这一行的包既不在 profile 里，也不属于随 harness 发行的那批 |
 
-Two results are recorded as notes instead of findings, because invocation counting cannot judge them. A row whose package name starts with `@deepseek-ai/` ships inside the harness rather than the profile, so an empty search says nothing about it. A package that wraps an existing service method registers no new capability and has no tool to count.
+有两类结果记为 notes 而不是 finding，因为调用计数判断不了它们。包名以 `@deepseek-ai/` 开头的行随 harness 发行，搜索为空说明不了任何事。包裹既有服务方法的包不注册新能力，也就没有可数的工具。
 
-Each finding carries an evidence locator, a classification taken from the ACCF effectiveness-gap taxonomy, and the observation that would falsify it.
+每条 finding 带证据定位、按 ACCF effectiveness-gap 分类法给出的归类，以及会推翻它的观测。
 
-## Boundaries
+## 边界
 
-A registration site in the source shows that a capability is declared. It does not show that the capability works.
+源码里的注册站点只说明能力被声明了，不说明它能用。
 
-An invocation count describes the logs that were scanned. A tool used in an unscanned profile, or before the log window, reads as unused. Counts also drift as a session grows.
+调用计数描述的是被扫描的那些日志。未扫描的 profile、日志窗口之前的调用都会读成未使用；会话变长，计数也会漂移。
 
-First-party packages ship inside the harness and are not searched. They are recorded as shipped rather than reported missing.
+第一方包随 harness 发行，不参与搜索。报告把它们记为 shipped，不报缺失。
 
-The scan matches a fixed set of call patterns, and the report lists them. A package that registers through some other call site will be misreported.
+扫描匹配一组固定的调用模式，报告里列出了这组模式。用其他调用点注册的包会被误报。
 
-The field `generated_from.preset_roots_searched` lists every skill root the run looked at. A root that was not resolved means its skills are absent from the report, not that they are unused.
+字段 `generated_from.preset_roots_searched` 逐条列出本次运行看过的 skill 根。某个根没被解析到，意味着它的 skill 不在报告里，不意味着它们没被使用。
 
-The report carries no semantic judgement.
+报告不含语义判断。
 
-## Ablation
+## 消融
 
 ```js
 import { collect } from "dsh-consumer-audit/collect";
@@ -59,36 +61,33 @@ const input = collect({ dshHome, profileDir });
 console.log(ablation(input));
 ```
 
-With consumer counting switched off, the tools and skills that need a count are reported as unassessed. An ablation that empties its input would look like a large change while proving nothing.
+关掉消费者计数时，需要计数的工具与 skill 记作未评估。把输入置空的那种消融看起来差异很大，实际什么也证明不了。
 
-## Verification
+## 验证
 
-| Check | Result |
-| --- | --- |
-| Market entry requirements | 22/22 |
-| The market's own catalog parser and install resolver, against a local fixture | 13/13, with three negative controls that do fail |
-| Plugin contract and behaviour, default roots | 22/22 |
-| Plugin contract and behaviour, shipped-presets root supplied | 22/22 |
-| `npm pack`, then install into an isolated prefix and re-run the checks against the installed copy | 22/22 |
-| First real finding, recounted independently | `continuity_recall` has 0 calls carrying that name across 15 session logs, while the control tools `continuity_state` and `set_retention_tier` have 70 and 6 |
+仓库根目录一条命令重跑全部检查：
 
 ```powershell
 .\tools\run-evidence.ps1
 ```
 
-Loading through the DSH loader after install has not been verified. The package is exercised by calling its exported `apply()` against a recording context, and the export shape is taken from two plugins that do load in this deployment.
+它依次检查：市场 entry 的机械要求、市场自己的目录解析器与安装解析器、两份 README 与 `SKILL.md` 的写作特征、插件契约在三种上下文下的行为、`npm pack` 后隔离安装的副本、对首个 finding 的独立重数，以及受跟踪文件里有没有本机信息。任何一节失败，脚本以非零码退出。
 
-## Repository layout
+当前数字与逐条描述见 [EVIDENCE.md](EVIDENCE.md)。README 不抄这些数字，它们每次运行都会变。
+
+**尚未验证**：装好后由 DSH loader 真正加载这一环。包是通过对它导出的 `apply()` 传入一个记录型上下文来跑的，导出形状取自本机两个确实能加载的插件。
+
+## 仓库结构
 
 ```
-lib/audit.js     pure judgement over a plain inventory, no I/O
-lib/collect.js   reads DSH_HOME and produces that inventory
-lib/index.js     registers the tool and the skill
-skills/          the skill body
-tools/           the checks and the publish script
-market/          the entry file for the curated list
+lib/audit.js     对一份普通清单做判定，无 I/O
+lib/collect.js   读 DSH_HOME，产出那份清单
+lib/index.js     注册工具与 skill
+skills/          skill 正文
+tools/           各项检查与发布脚本
+market/          提交进精选列表的条目文件
 ```
 
-## License
+## 许可
 
 MIT

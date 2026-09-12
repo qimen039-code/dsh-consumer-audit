@@ -39,7 +39,7 @@
 2. **调用计数只描述「被扫描的日志」。** 未扫描的 profile、日志窗口之前的调用，一律读成 0。本次扫描 15 个会话文件，这只是本机存在的那 15 个。
 3. **第一方 `@deepseek-ai/*` 包不搜索。** 它们随 harness 发行（在 `app.asar` 内），报告记为 `first_party_shipped`，**不是**"缺失"。
 4. **扫描是启发式的。** 目前的模式集：`tools.register` / `provide(` / `.section(` / `skills.register` / `commands.register` / `webServer.register` / `ctx.effect(`。用其他方式注册的包会被误报，报告里写明了模式集。
-5. **包裹既有服务方法的行不做判定。** `@mj/dsh-image-admit` 就是这种：它改的是 `llm.resolveModelInfo`，不注册任何新能力，调用计数判断不了它。报告记 `intercepts_host_behaviour`，**不是**缺陷。
+5. **包裹既有服务方法的行不做判定。** `另一个本机私有插件` 就是这种：它改的是 `llm.resolveModelInfo`，不注册任何新能力，调用计数判断不了它。报告记 `intercepts_host_behaviour`，**不是**缺陷。
 6. **报告会写出它搜索了哪些根。** `generated_from.preset_roots_searched` 逐条给出 `origin / dir / searched`。没被解析到的根会让它的 skill 从报告里消失，所以那一行必须显示 `searched:false`，不能安静地少几条。这条是实测发现缺陷后补的，见 §6.3。
 7. **计数会随会话增长漂移。** 同一台机器同一个工具，`continuity_state` 从 66 涨到 68，只是因为本会话又调用了两次。数字只对"运行那一刻的日志集合"成立。
 
@@ -69,7 +69,7 @@
 "with_consumers": {"tool_never_invoked": 1},
 "without_consumers": {},
 "unassessed_without_consumers": 7,
-"findings_only_with_consumer_evidence": ["tool_never_invoked|continuity_recall (from @mj/dsh-continuity)"],
+"findings_only_with_consumer_evidence": ["tool_never_invoked|continuity_recall (from 一个本机私有插件)"],
 "verdict": "consumer evidence narrowed 7 declared-but-unmeasured capabilities into 1 finding(s)"
 ```
 
@@ -201,7 +201,7 @@ README 两个版本是重写的。SKILL.md 与本文是清掉破折号与反向�
 
 ### 6.1 最严重的一条：我的验证是自证的
 
-第一版 `lib/index.js` 导出的是**函数**（`export default function apply(ctx, config)`），而本机能加载的两个插件（`@mj/dsh-continuity`、`@mj/dsh-image-admit`）导出的都是**对象**：
+第一版 `lib/index.js` 导出的是**函数**（`export default function apply(ctx, config)`），而本机能加载的两个插件（`一个本机私有插件`、`另一个本机私有插件`）导出的都是**对象**：
 
 ```js
 export default { name: NAME, inject: [...], apply(ctx) { ... } };
@@ -224,7 +224,9 @@ audit-run-1.txt 里的 verdict: "consumer evidence narrowed 7 ... into 1 finding
 那正是修好之后的措辞；坏掉那版说的是 "changed nothing"
 ```
 
-它是一轮**有效**运行，与后来那次只差 `unassessed` 的 7 vs 5。**我已经恢复它**（`tools/audit-run-1.txt`）。
+它是一轮**有效**运行，与后来那次只差 `unassessed` 的 7 vs 5。**我当时恢复了它。**
+
+后来它还是被移出了仓库，但理由完全不同，而且是可验证的：它逐行记录了运行时的绝对路径。见 §6.8。**同一个文件被删两次，第一次的理由是编的，第二次的理由有扫描器撑腰。** 这一条留着，因为两者的区别就是这个项目想守住的东西。
 
 但这个错误操作顺带暴露了一个**真缺陷**：两次运行差 2，是因为 `lib/index.js` **从不给 `shippedPresetsDir` 设默认值**，只读 config。于是装好的插件在没有任何配置时会**静默漏掉随 harness 发行的 preset 里的全部 skill**（4 → 2），而报告里看不出少了什么。
 
@@ -244,7 +246,7 @@ audit-run-1.txt 里的 verdict: "consumer evidence narrowed 7 ... into 1 finding
 
 本次**没有**删除用户既有 profile 的任何行、插件或 skill。工具只读，不写任何东西。
 
-**特别地：`continuity_recall` 缺少消费者这条 finding，我没有据此删除或改动 `@mj/dsh-continuity`。** 报告给出事实，是否删是你的决定。
+**特别地：`continuity_recall` 缺少消费者这条 finding，我没有据此删除或改动 `一个本机私有插件`。** 报告给出事实，是否删是你的决定。
 
 ---
 
@@ -269,8 +271,8 @@ audit-run-1.txt 里的 verdict: "consumer evidence narrowed 7 ... into 1 finding
         ①b 13/13；installTargetFor -> github:qimen039-code/dsh-consumer-audit；
            三条负向对照分别命中 null / "no usable category" / "came back empty"
         ②  tarball 9 个文件；隔离安装 added 4 packages；装好的副本 22/22
-        ③  契约由 @mj/dsh-continuity(export default { name, inject, apply }) 与
-           @mj/dsh-image-admit 读出；修形状前是 15/15 的假通过（见 §6.1）
+        ③  契约由 一个本机私有插件(export default { name, inject, apply }) 与
+           另一个本机私有插件 读出；修形状前是 15/15 的假通过（见 §6.1）
         ④  默认根：shipped preset 行 searched=false；显式根：searched=true 且 skill 数 2 → 4
         ⑤  continuity_recall: tool/call 含字符串 14 条，精确调用名 0 条
            continuity_state 70 条（66 → 68 → 70，随本会话增长）；set_retention_tier 6 条
@@ -281,9 +283,32 @@ audit-run-1.txt 里的 verdict: "consumer evidence narrowed 7 ... into 1 finding
         未声明的本地包会让整棵树加载失败）；没有启动 harness 端到端验证；
         **没有向 awesome-dsh-plugin 提 PR**，所以"已进入市场"仍未发生；
         扫描只覆盖本机存在的 15 个会话文件；计数随会话增长漂移；
-        本机市场配置了代理 http://127.0.0.1:8118（本地 fixture 抓取未受影响，正例通过）。
+        本机市场配置了一个 HTTP 代理，地址不记录。本地 fixture 抓取未受影响，正例通过。
 ```
 
 `stopped` 与 `applied` 不混用：**loader 启动加载这一环是 `stopped`，不是成功。**
 
-原始日志见 `EVIDENCE-run.log`（由 `tools/run-evidence.ps1` 生成，可重复执行）。
+本节所有数字的原始日志由 `tools/run-evidence.ps1` 生成，落在本机 `EVIDENCE-run.log`，**不入库**。理由见 §6.8。
+
+### 6.8 本机信息泄漏排查（本轮）
+
+用户要求遍历所有文件，确认没有把本机的东西写进公开仓库。为此写了 `tools/scan-secrets.mjs`，遍历 `git ls-files` 的每一个文件，按九类模式扫：绝对 Windows 路径、绝对 POSIX 路径、本机会话 id、回环地址、凭据形状、`.dsh` 目录布局、私有包作用域、第三方本机工具路径、个人文档路径。
+
+**第一次跑出 109 处命中，但里面有假阳性**：盘符那条正则把转义 URL 里的斜杠序列读成了盘符。收紧成「盘符前不得是字母数字」后降到 89 处。**先修扫描器再清内容**，否则会去"修"根本不是问题的东西。
+
+补一条：修好之后这次扫描**逮到了本文自己**。我把那条正则的形态照抄进了这段说明，于是说明本身长得像一条盘符路径。这里没有去放宽扫描器，改的是这段正文。反引号里的绝对路径也该被抓到，这是扫描器该有的行为。
+
+处理结果：
+
+| 对象 | 处理 | 理由 |
+|---|---|---|
+| `EVIDENCE-run.log`、`tools/audit-run-*.txt`、`tools/*.json` | 移出仓库并加进 `.gitignore` | 生成的运行产物，逐行含绝对路径；由 `run-evidence.ps1` 可重跑 |
+| `EVIDENCE.md` 里的私有包作用域 | 改成「一个本机私有插件」 | 私有 npm 作用域属于本机信息 |
+| `EVIDENCE.md` 里的代理地址 | 删掉具体端口 | 本机服务地址 |
+| `tools/overlay-path.yml` | 删除 | 一次性探针，含绝对路径；结论在 §6.4 已记 |
+| `recount-name.mjs` / `run-audit.mjs` / `verify-market-consumer.mjs` | 硬编码路径改成从 `DSH_HOME` 或 `homedir()` 推导 | 脚本本身不该绑定某台机器 |
+| `run-evidence.ps1` 的 shipped presets 路径 | 改成由 `SHIPPED_PRESETS_DIR` 环境变量提供，未提供则该节记 SKIPPED | 该路径随安装位置变化，不该写死 |
+
+`tools/scan-secrets.mjs` 已接进 `tools/run-evidence.ps1` 的第六节。**仓库当前状态：24 个受跟踪文件，0 处命中。** 这条是闸门，不是一次性检查：再写入本机路径，证据链会失败。
+
+**保留未改的**：`continuity_recall` 这个工具名。它是重数验证的对象，匿掉就没法复核。私有包作用域已去掉，只留工具名。

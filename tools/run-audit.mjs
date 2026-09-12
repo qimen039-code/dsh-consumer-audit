@@ -1,10 +1,11 @@
+import { join } from "node:path";
+import { homedir } from "node:os";
 import { collect } from "../lib/collect.js";
 import { audit, ablation } from "../lib/audit.js";
 
-const dshHome = process.env.DSH_HOME ?? "C:\\Users\\MJ\\.dsh";
+const dshHome = process.env.DSH_HOME ?? join(homedir(), ".dsh");
 const profileDir = `${dshHome}\\profiles\\desktop`;
-const shippedPresetsDir =
-  "C:\\Users\\MJ\\DeepSeek\\.asar-extract\\node_modules\\@deepseek-ai\\dsh-agent-presets\\presets";
+const shippedPresetsDir = process.env.SHIPPED_PRESETS_DIR;
 
 const t0 = Date.now();
 const input = collect({ dshHome, profileDir, shippedPresetsDir });

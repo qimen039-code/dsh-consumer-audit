@@ -7,10 +7,11 @@
  */
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
+import { homedir } from "node:os";
 import zlib from "node:zlib";
 
 const name = process.argv[2];
-const sessionsRoot = process.argv[3] ?? "C:\\Users\\MJ\\.dsh\\sessions";
+const sessionsRoot = process.argv[3] ?? join(process.env.DSH_HOME ?? join(homedir(), ".dsh"), "sessions");
 const ZSTD_MAGIC = 4247762216;
 
 function records(file) {

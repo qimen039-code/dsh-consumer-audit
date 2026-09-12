@@ -8,6 +8,7 @@ $pkgRoot = Split-Path -Parent $PSScriptRoot
 $log = Join-Path $pkgRoot 'EVIDENCE-run.log'
 $stage = Join-Path $pkgRoot '.install-check'
 $failed = @()
+$explicitPresets = $env:SHIPPED_PRESETS_DIR
 
 # npm resolves package.json from the working directory, so the npm steps must run
 # from the package root rather than wherever this script was invoked.
@@ -45,7 +46,8 @@ Section '1. market entry requirements'
 Run 'market manifest checks' 'node' @(Join-Path $PSScriptRoot 'verify-market-manifest.mjs')
 
 Section '1b. the real market consumer (its own catalog parser + install resolver)'
-$market = Join-Path $env:USERPROFILE '.dsh\profiles\desktop\node_modules\dshmarket'
+$dshHome = if ($env:DSH_HOME) { $env:DSH_HOME } else { Join-Path $env:USERPROFILE '.dsh' }
+$market = Join-Path $dshHome 'profiles\desktop\node_modules\dshmarket'
 if (Test-Path $market) {
   Run 'market consumer checks' 'node' @(
     (Join-Path $PSScriptRoot 'verify-market-consumer.mjs'), '--market', $market
@@ -58,7 +60,7 @@ Section '1c. prose: the AI-writing tells this repository claims to avoid'
 Run 'prose lint' 'node' @(
   (Join-Path $PSScriptRoot 'lint-prose.mjs'),
   (Join-Path $pkgRoot 'README.md'),
-  (Join-Path $pkgRoot 'README.zh.md'),
+  (Join-Path $pkgRoot 'README.en.md'),
   (Join-Path $pkgRoot 'skills\consumer-audit\SKILL.md'),
   (Join-Path $pkgRoot 'EVIDENCE.md')
 )
@@ -70,8 +72,8 @@ $env:SHIPPED_PRESETS_DIR = $null
 Run 'plugin checks (default roots)' 'node' @(Join-Path $PSScriptRoot 'verify-plugin.mjs')
 
 Section '3. plugin contract and behaviour, with the shipped presets root supplied'
-$env:SHIPPED_PRESETS_DIR = 'C:\Users\MJ\DeepSeek\.asar-extract\node_modules\@deepseek-ai\dsh-agent-presets\presets'
-Run 'plugin checks (explicit roots)' 'node' @(Join-Path $PSScriptRoot 'verify-plugin.mjs')
+if ($explicitPresets) { $env:SHIPPED_PRESETS_DIR = $explicitPresets }
+if ($explicitPresets) { Run 'plugin checks (explicit roots)' 'node' @(Join-Path $PSScriptRoot 'verify-plugin.mjs') } else { 'SHIPPED_PRESETS_DIR is not set; SKIPPED (not a pass)' | Add-Content $log }
 
 Section '4. npm pack + isolated install + behaviour of the installed copy'
 Run 'npm pack' 'npm' @('pack', '--pack-destination', $stage)
@@ -88,6 +90,9 @@ Section '5. independent recount of the reported finding'
 Run 'continuity_recall' 'node' @((Join-Path $PSScriptRoot 'recount-name.mjs'), 'continuity_recall')
 Run 'continuity_state (control)' 'node' @((Join-Path $PSScriptRoot 'recount-name.mjs'), 'continuity_state')
 Run 'set_retention_tier (control)' 'node' @((Join-Path $PSScriptRoot 'recount-name.mjs'), 'set_retention_tier')
+
+Section '6. machine-specific content in tracked files'
+Run 'secret scan' 'node' @((Join-Path $PSScriptRoot 'scan-secrets.mjs'))
 
 Section 'result'
 if ($failed.Count -eq 0) { 'all steps passed' | Add-Content $log } else { "FAILED: $($failed -join ', ')" | Add-Content $log }

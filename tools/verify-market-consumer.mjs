@@ -17,6 +17,7 @@ import { createServer } from "node:http";
 import { readFileSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { pathToFileURL } from "node:url";
+import { homedir } from "node:os";
 
 const pkgRoot = join(import.meta.dirname, "..");
 const args = process.argv.slice(2);
@@ -24,7 +25,7 @@ const marketArg = args.indexOf("--market");
 const marketRoot =
   marketArg >= 0
     ? args[marketArg + 1]
-    : "C:\\Users\\MJ\\.dsh\\profiles\\desktop\\node_modules\\dshmarket";
+    : join(process.env.DSH_HOME ?? join(homedir(), ".dsh"), "profiles", "desktop", "node_modules", "dshmarket");
 
 const checks = [];
 const check = (name, ok, detail) => checks.push({ name, ok: Boolean(ok), detail });
