@@ -8,18 +8,20 @@
 
 | # | 纠正 | 证据定位 | 落到产物的哪一处 |
 |---|---|---|---|
-| C1 | 声称"完成/已实现"必须带证据链，否则只能写"未验证"；**外壳存在 ≠ 效果已验证** | `session-afb2abc3` user seq=1484 | `SKILL.md` §2 五栏证据链格式、§4 禁止清单 |
-| C2 | **服务必须有消费者**；注册了却无人调用 = 死代码 | `session-afb2abc3` user seq=1484 | 整个 `consumer_audit` 工具；`SKILL.md` §5 判据 |
-| C3 | 材料出现在工具输出里 ≠ 形成了联想 | `session-afb2abc3` user seq=1484 | `SKILL.md` §8 反模式清单 |
-| C4 | 更新时必须清理过期内容，不能只加不删 | `session-afb2abc3` user seq=257 | `SKILL.md` §6.3 |
-| C5 | 不按层级判断，按证据与后果；不做二极管；**不自封授权，也不自封否决**；等价方案选更优而不是选被允许的 | `session-afb2abc3` user seq=2962 / 2985 | `SKILL.md` §4.4；本文件 §4 不把 app.asar 改动当禁地 |
-| C6 | 看到良性可能性要先查证再汇报，不要先汇报已知 | `session-89ec113e` user seq=659 | `SKILL.md` §1 证伪条件；本文件 §5 |
-| C7 | 区分「事实」与「仅推理得出、还不能当完全证据的结论」 | `session-89ec113e` user seq=1095 | `SKILL.md` §1、§2 归类表 |
-| C8 | 纠偏机制维护成本过高 = 治标不治本 | `session-89ec113e` user seq=659 | 本文件 §4：工具只测量、不做语义裁决，避免维护一份判定规则 |
-| C9 | 文件能做最小修改的不重写，可复用的不重写 | `session-047ef61a` user seq=1278 | 代码分层：纯判定（`audit.js`）与 I/O（`collect.js`）分离，可分别替换 |
-| C10 | 审查已有插件是否**实际有效**，而不是我已经做过的伪实现 | `session-afb2abc3` user seq=1227 | 工具的首个真实 finding（见 §3） |
+| C1 | 声称"完成/已实现"必须带证据链，否则只能写"未验证"；**外壳存在 ≠ 效果已验证** | `S1` user seq=1484 | `SKILL.md` §2 五栏证据链格式、§4 禁止清单 |
+| C2 | **服务必须有消费者**；注册了却无人调用 = 死代码 | `S1` user seq=1484 | 整个 `consumer_audit` 工具；`SKILL.md` §5 判据 |
+| C3 | 材料出现在工具输出里 ≠ 形成了联想 | `S1` user seq=1484 | `SKILL.md` §8 反模式清单 |
+| C4 | 更新时必须清理过期内容，不能只加不删 | `S1` user seq=257 | `SKILL.md` §6.3 |
+| C5 | 不按层级判断，按证据与后果；不做二极管；**不自封授权，也不自封否决**；等价方案选更优而不是选被允许的 | `S1` user seq=2962 / 2985 | `SKILL.md` §4.4；本文件 §4 不把 app.asar 改动当禁地 |
+| C6 | 看到良性可能性要先查证再汇报，不要先汇报已知 | `S2` user seq=659 | `SKILL.md` §1 证伪条件；本文件 §5 |
+| C7 | 区分「事实」与「仅推理得出、还不能当完全证据的结论」 | `S2` user seq=1095 | `SKILL.md` §1、§2 归类表 |
+| C8 | 纠偏机制维护成本过高 = 治标不治本 | `S2` user seq=659 | 本文件 §4：工具只测量、不做语义裁决，避免维护一份判定规则 |
+| C9 | 文件能做最小修改的不重写，可复用的不重写 | `S3` user seq=1278 | 代码分层：纯判定（`audit.js`）与 I/O（`collect.js`）分离，可分别替换 |
+| C10 | 审查已有插件是否**实际有效**，而不是我已经做过的伪实现 | `S1` user seq=1227 | 工具的首个真实 finding（见 §3） |
 
-**我自己在本会话犯的错**（`session-bdca6d9e`，也进了 `SKILL.md` §8）：
+S1 到 S4 是本机四段会话的本地代号。对应关系不公开，因为会话 id 属于本机信息。
+
+**我自己在本会话犯的错**（S4，也进了 `SKILL.md` §8）：
 
 | 错误 | 后果 |
 |---|---|
@@ -176,7 +178,7 @@ control: plugins 为空数组            -> loadRegistry 抛出 "came back empty
 
 ### 6.6 `repository.url` 里写的是占位符
 
-建仓并核验远端时发现：`package.json` 的 `repository.url` 是 `git+https://github.com/MJ/dsh-consumer-audit.git`，而实际账号是 `qimen039-code`。这是我起初不知道账号时留的占位符，一直没回头核对。
+建仓并核验远端时发现：`package.json` 的 `repository.url` 里写的是占位账号，实际账号是 `qimen039-code`。这是我起初不知道账号时留的占位符，一直没回头核对。
 
 contributing.md 写明："The published package's `repository` field must point back at the repository listed here, or the two are not linked." 也就是说，如果这个字段错了，npm 包与列表条目不会关联。
 

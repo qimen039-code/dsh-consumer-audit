@@ -18,7 +18,7 @@ const RULES = [
   // `https:\/\/` inside an escaped URL or regex reads as the path `s:\`.
   { id: "absolute-windows-path", why: "local filesystem path", re: /(?<![A-Za-z0-9])[A-Za-z]:\\[^\s"'`)]*/g },
   { id: "absolute-posix-home", why: "local filesystem path", re: /\/(?:home|Users)\/[A-Za-z0-9._-]+\/[^\s"'`)]*/g },
-  { id: "local-session-id", why: "session id from this machine", re: /session-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g },
+  { id: "local-session-id", why: "session id from this machine", re: /session-[0-9a-f]{8}/g },
   { id: "loopback-endpoint", why: "local service address", re: /(?:127\.0\.0\.1|localhost):\d+/g },
   { id: "credential-shaped", why: "looks like a token", re: /\b(?:gho|ghp|ghs|ghr)_[A-Za-z0-9]{16,}\b|\bsk-[A-Za-z0-9_-]{16,}\b|\bBearer\s+[A-Za-z0-9._-]{16,}/g },
   { id: "dsh-home-layout", why: "local harness layout", re: /\.dsh[\\/](?:profiles|sessions|continuity|agent-presets|storages|mcp-servers)\b/g },
