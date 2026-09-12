@@ -182,7 +182,7 @@ control: plugins 为空数组            -> loadRegistry 抛出 "came back empty
 
 contributing.md 写明："The published package's `repository` field must point back at the repository listed here, or the two are not linked." 也就是说，如果这个字段错了，npm 包与列表条目不会关联。
 
-已修，并在 `tools/verify-market-manifest.mjs` 里加了断言：`repository.url` 必须包含条目的 `owner/repo`。**并跑了负向对照**：把账号改回 `MJ`，检查降到 22/23 且 exit 1，确认这条断言会失败而不是恒真。
+已修，并在 `tools/verify-market-manifest.mjs` 里加了断言：`repository.url` 必须包含条目的 `owner/repo`。**并跑了负向对照**：把账号改回占位值，检查降到 22/23 且 exit 1，确认这条断言会失败，不是恒真。
 
 发现它的原因很直接：建完仓库以后没有只信 `gh` 的回显，而是把远端文件抓回来逐项核对。
 
