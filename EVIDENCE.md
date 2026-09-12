@@ -252,6 +252,44 @@ audit-run-1.txt 里的 verdict: "consumer evidence narrowed 7 ... into 1 finding
 
 ---
 
+### 6.9 本机真实安装（本轮）
+
+用户要求把它装到本机真跑一遍。这一步抓出四个**只有真实启动才能发现**的缺陷。
+
+**缺陷 1：loader 不用 Node 的解析规则。** 包放在 `profiles/node_modules/` 时 Node 的 `createRequire` 能解析，宿主却报：
+
+```
+cannot resolve package "dsh-consumer-audit" from the Desktop installation or active Profile
+PackageOverlayNotFoundError
+```
+
+它只认「Desktop 安装 + **活动 Profile 自己的** node_modules」。本机的 `@mj/*` 恰好同时存在于两层，我照抄错了层次。
+
+**缺陷 2：读未声明的 ctx 属性会抛异常。** `cannot get property "config" without inject`。我写过一句"防御性"的 `ctx.config` 回退，在 Cordis 里它不是安全网，是启动即失败。
+
+**缺陷 3：不声明 `inject` 时 `ctx.get("tools")` 返回 undefined。** 加载回执显示 `tools=[] skills=[]`：**插件装上了，什么都没注册**。这正是本项目要防的那类伪实现，文件在、能加载、零能力。
+
+**缺陷 4：`apply` 的返回值会被当成 effect 执行。** 我返回了一个描述对象 `{ tools, skills }`，宿主报 `TypeError: Invalid effect`，**整棵插件树启动失败**。Cordis 只接受函数、迭代器，或什么都不返回。
+
+修完后的真实启动回执：
+
+```
+[consumer-audit] LOAD-RECEIPT profile=desktop ctxTools=present disposers=2
+dsh web: http://127.0.0.1:44001/?token=...
+[status: running]
+```
+
+`disposers=2` 指工具与 skill 各注册一个。
+
+**而我的测试原本在保护这些 bug：**
+
+| 我的测试缺陷 | 后果 |
+|---|---|
+| 假 ctx 是普通对象，没有 Cordis 那层"未声明属性即抛错" | 抓不到缺陷 2。已改成 Proxy |
+| 断言的契约是我自己发明的 | 一条 `apply() returns its declared surface` 断言**正好在保护缺陷 4**。已改成断言"返回值是合法 effect" |
+| PowerShell 的 `Copy-Item <目录> <已存在目录>` 会套一层 `lib\lib` | 连着两次**测的是旧代码**，白跑两轮真实启动 |
+
+结论：`verify-plugin.mjs` 的假 ctx 能验逻辑，验不了装载契约。装载契约只有真装上去才知道。
 ## 7. 交付证据链（五栏格式）
 
 ```
@@ -280,7 +318,7 @@ audit-run-1.txt 里的 verdict: "consumer evidence narrowed 7 ... into 1 finding
            continuity_state 70 条（66 → 68 → 70，随本会话增长）；set_retention_tier 6 条
         一节不通过脚本即 exit 1：`all steps passed` / `FAILED: ...`
 归类：  applied_verified（工具逻辑、安装性、市场清单要求、**市场消费者解析**、导出形状、根搜索可见性）
-        stopped（**未验证**：装好后由 DSH loader 真实启动加载；以及站点生成器本身）
+        applied_verified（含**真实装载**：desktop 与 web 两个 profile 实际启动过，回执 disposers=2）
 边界：  没有在真实 profile 上执行 dsh plugin add（会改动用户活动插件树，AGENTS.md §2 记录过
         未声明的本地包会让整棵树加载失败）；没有启动 harness 端到端验证；
         **没有向 awesome-dsh-plugin 提 PR**，所以"已进入市场"仍未发生；

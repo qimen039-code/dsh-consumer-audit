@@ -23,6 +23,15 @@ check("patch has the insert list shape", /^-\s*insert:\s*$/m.test(patch) && /^\s
 check("patch row name matches the package name", patch.includes(`name: ${pkg.name}`), pkg.name);
 check("main entry exists", existsSync(join(root, "package.json")) && existsSync(join(root, pkg.main ?? "")));
 
+// The `exports` map hides everything it does not name, including package.json.
+// Storefronts and compatibility checks resolve `<plugin>/package.json` to read
+// the dsh manifest, so omitting it breaks them with ERR_PACKAGE_PATH_NOT_EXPORTED.
+check(
+  "exports exposes ./package.json",
+  pkg.exports?.["./package.json"] === "./package.json",
+  JSON.stringify(pkg.exports?.["./package.json"] ?? null),
+);
+
 // --- market entry file
 check("entry file present", entry.length > 0, entryPath);
 const urlMatch = /^url:\s*(\S+)$/m.exec(entry);

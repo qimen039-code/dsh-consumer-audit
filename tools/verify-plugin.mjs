@@ -15,26 +15,29 @@ const mod = await import(pathToFileURL(join(pkgRoot, "lib", "index.js")).href);
 const registrations = { tools: [], skills: [], effectDisposers: [] };
 const live = { tools: new Set(), skills: new Set() };
 
-const ctx = {
+// The real service objects, reachable both as injected properties (ctx.tools)
+// and through ctx.get, the way Cordis exposes an injected service.
+const toolsService = {
+  register(def) {
+    registrations.tools.push(def);
+    live.tools.add(def.name);
+    return () => live.tools.delete(def.name);
+  },
+};
+const skillsService = {
+  register(skill) {
+    registrations.skills.push(skill);
+    live.skills.add(skill.name);
+    return () => live.skills.delete(skill.name);
+  },
+};
+
+const rawCtx = {
+  tools: toolsService,
+  skills: skillsService,
   get(name) {
-    if (name === "tools") {
-      return {
-        register(def) {
-          registrations.tools.push(def);
-          live.tools.add(def.name);
-          return () => live.tools.delete(def.name);
-        },
-      };
-    }
-    if (name === "skills") {
-      return {
-        register(skill) {
-          registrations.skills.push(skill);
-          live.skills.add(skill.name);
-          return () => live.skills.delete(skill.name);
-        },
-      };
-    }
+    if (name === "tools") return toolsService;
+    if (name === "skills") return skillsService;
     return undefined;
   },
   effect(callback) {
@@ -45,6 +48,21 @@ const ctx = {
     return () => {};
   },
 };
+
+// Cordis throws when a plugin reads a context property it did not declare in
+// `inject`: "cannot get property X without inject". A plain object ctx has no
+// such rule, so a plugin that reads `ctx.config` passes a permissive harness and
+// then fails to boot. The proxy restores that rule here. Anything the plugin
+// reaches for must therefore appear in DECLARED, which mirrors its `inject`.
+const DECLARED = new Set(["tools", "skills", "get", "effect", "on"]);
+const ctx = new Proxy(rawCtx, {
+  get(target, prop, receiver) {
+    if (typeof prop === "symbol" || DECLARED.has(prop) || prop in target) {
+      return Reflect.get(target, prop, receiver);
+    }
+    throw new Error(`cannot get property "${String(prop)}" without inject`);
+  },
+});
 
 const checks = [];
 const check = (name, ok, detail) => checks.push({ name, ok: Boolean(ok), detail });
@@ -74,8 +92,22 @@ try {
 }
 check("shipped presets root resolution attempted", true, shippedPresetsDir ?? "(not resolved — must be visible as unsearched in the report)");
 
+// Cordis executes apply's result as an effect, so only a function, an
+// (async) iterator, or nothing is accepted. Returning a descriptor object fails
+// the whole plugin tree with TypeError("Invalid effect"). An earlier version of
+// this harness asserted that descriptor instead, which protected the bug.
+check(
+  "plugin declares the services it reads in inject",
+  Array.isArray(mod.default?.inject) && mod.default.inject.includes("tools") && mod.default.inject.includes("skills"),
+  JSON.stringify(mod.default?.inject),
+);
+
 const api = mod.default.apply(ctx, { profile: "desktop", shippedPresetsDir });
-check("apply() returns its declared surface", Array.isArray(api?.tools) && Array.isArray(api?.skills), JSON.stringify(api));
+check(
+  "apply() returns a valid effect (nothing or a function)",
+  api === undefined || typeof api === "function",
+  `${typeof api} ${JSON.stringify(api)?.slice(0, 60)}`,
+);
 check("one tool registered", registrations.tools.length === 1, registrations.tools.map((t) => t.name));
 check("one skill registered", registrations.skills.length === 1, registrations.skills.map((s) => s.name));
 

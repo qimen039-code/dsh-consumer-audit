@@ -8,7 +8,8 @@
   "exports": {
     ".": "./lib/index.js",
     "./audit": "./lib/audit.js",
-    "./collect": "./lib/collect.js"
+    "./collect": "./lib/collect.js",
+    "./package.json": "./package.json"
   },
   "files": [
     "lib",
