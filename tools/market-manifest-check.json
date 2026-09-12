@@ -1,6 +1,6 @@
 {
-  "passed": 22,
-  "total": 22,
+  "passed": 23,
+  "total": 23,
   "checks": [
     {
       "name": "package.json declares dsh.bundle.patch",
@@ -10,7 +10,7 @@
     {
       "name": "cordis.patch.yml exists next to package.json",
       "ok": true,
-      "detail": "C:\\Users\\MJ\\DeepSeek\\dsh-consumer-audit\\cordis.patch.yml"
+      "detail": "C:\\Users\\MJ\\Projects\\dsh-consumer-audit\\cordis.patch.yml"
     },
     {
       "name": "patch has the insert list shape",
@@ -28,7 +28,7 @@
     {
       "name": "entry file present",
       "ok": true,
-      "detail": "C:\\Users\\MJ\\DeepSeek\\dsh-consumer-audit\\market\\data__plugins__qimen039-code__dsh-consumer-audit.yml"
+      "detail": "C:\\Users\\MJ\\Projects\\dsh-consumer-audit\\market\\data__plugins__qimen039-code__dsh-consumer-audit.yml"
     },
     {
       "name": "entry url is a github repo url",
@@ -72,6 +72,11 @@
     {
       "name": "described skill name exists in source",
       "ok": true
+    },
+    {
+      "name": "package.json repository points back at the listed repo",
+      "ok": true,
+      "detail": "git+https://github.com/qimen039-code/dsh-consumer-audit.git vs qimen039-code/dsh-consumer-audit"
     },
     {
       "name": "peer @deepseek-ai/cordis resolves against a stable line",

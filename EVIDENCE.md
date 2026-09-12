@@ -171,6 +171,33 @@ control: plugins 为空数组            -> loadRegistry 抛出 "came back empty
 | 分 | `audit.js`（纯判定）/ `collect.js`（I/O） | C9 最小改动：判定可被独立替换与复用，不必重写采集 |
 | **改** | **导出形状：`export default function apply` → `export default { name, apply }`** | 见 §6.1，这是最严重的一条 |
 | **改** | **验证器断言的契约** | 见 §6.1，上一版验证是自证的 |
+| **改** | **`package.json` 的 `repository.url`** | 见 §6.6，占位符写错了账号 |
+| **清** | README 与 SKILL.md 的 AI 写作特征 | 见 §6.7 |
+
+### 6.6 `repository.url` 里写的是占位符
+
+建仓并核验远端时发现：`package.json` 的 `repository.url` 是 `git+https://github.com/MJ/dsh-consumer-audit.git`，而实际账号是 `qimen039-code`。这是我起初不知道账号时留的占位符，一直没回头核对。
+
+contributing.md 写明："The published package's `repository` field must point back at the repository listed here, or the two are not linked." 也就是说，如果这个字段错了，npm 包与列表条目不会关联。
+
+已修，并在 `tools/verify-market-manifest.mjs` 里加了断言：`repository.url` 必须包含条目的 `owner/repo`。**并跑了负向对照**：把账号改回 `MJ`，检查降到 22/23 且 exit 1，确认这条断言会失败而不是恒真。
+
+发现它的原因很直接：建完仓库以后没有只信 `gh` 的回显，而是把远端文件抓回来逐项核对。
+
+### 6.7 AI 写作特征
+
+用户要求去掉 AI 味。依据取自 Wikipedia:Signs of AI writing（CC BY-SA，**未**随 MIT 仓库提交，放在仓库外的 `dsh-consumer-audit-references/`），并落成一个可跑的检查 `tools/lint-prose.mjs`，覆盖破折号滥用、"不是…而是…"、"not just … but"、内联加粗小标题列表、三段排比、夸大词、总结段、伪范围、弯引号。
+
+结果：
+
+| 文件 | 违规 | 加粗/百行 |
+|---|---:|---:|
+| `README.md` | 0 | 0 |
+| `README.zh.md` | 0 | 0 |
+| `skills/consumer-audit/SKILL.md` | 0 | 38.6 |
+| `EVIDENCE.md` | 0 | 55.5 |
+
+README 两个版本是重写的。SKILL.md 与本文是清掉破折号与反向对举。**加粗密度仍偏高**：SKILL.md 是给模型的纪律条文，加粗承担强调功能；本文是工作记录。这一项**没有降到 README 那种水平**，如实列出，不算完成。
 
 ### 6.1 最严重的一条：我的验证是自证的
 

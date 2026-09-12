@@ -53,6 +53,17 @@ check(
 check("described tool name exists in source", readFileSync(join(root, "lib", "index.js"), "utf8").includes("consumer_audit"));
 check("described skill name exists in source", readFileSync(join(root, "lib", "index.js"), "utf8").includes('"consumer-audit"'));
 
+// contributing.md: "The published package's repository field must point back at
+// the repository listed here, or the two are not linked." A placeholder owner
+// here would silently break the npm-to-repo mapping.
+const repoUrl = pkg.repository?.url ?? "";
+const entrySlug = (nameMatch?.[1] ?? "").toLowerCase();
+check(
+  "package.json repository points back at the listed repo",
+  entrySlug.length > 0 && repoUrl.toLowerCase().includes(entrySlug),
+  `${repoUrl} vs ${entrySlug}`,
+);
+
 // --- peer ranges: explicit prerelease branch per contributing.md
 //
 // The rule applies to packages that publish prereleases (the harness packages

@@ -26,7 +26,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/MJ/dsh-consumer-audit.git"
+    "url": "git+https://github.com/qimen039-code/dsh-consumer-audit.git"
   },
   "engines": {
     "node": ">=22.15.0"
