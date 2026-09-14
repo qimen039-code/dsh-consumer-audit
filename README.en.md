@@ -129,7 +129,7 @@ One command from the repository root reruns every check:
 .\tools\run-evidence.ps1
 ```
 
-It covers the market entry requirements, the market's own catalog parser and install resolver, the writing style of both READMEs and the skill, the plugin contract in three contexts, an isolated install of the packed tarball, an independent recount of the first finding, and a scan of every tracked file for machine-specific content. Any failing section exits non-zero.
+It covers the market entry's requirements and shape, the market's own catalog parser and install resolver, the writing style of both READMEs and the skill, the plugin contract in four contexts, an isolated install of the packed tarball, whether the release asset the entry declares can actually be fetched and installed, an independent recount of the first finding, and a scan of every tracked file for machine-specific content. Any failing section exits non-zero.
 
 Current numbers and the per-item description are in [EVIDENCE.md](EVIDENCE.md). The README does not repeat them, because they change on every run.
 

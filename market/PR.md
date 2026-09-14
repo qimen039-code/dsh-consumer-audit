@@ -29,6 +29,6 @@ One command from the repository root reruns every check:
 .\tools\run-evidence.ps1
 ```
 
-It covers the market entry requirements, this repository's own catalog parser and install resolver driven against a local fixture through `DSHM_REGISTRY_URL`, the writing style of the documents, the plugin contract in three contexts, an isolated install of the packed tarball, an independent recount of the first finding, and a scan of every tracked file for machine-specific content. Any failing section exits non-zero.
+It covers the market entry requirements, this repository's own catalog parser and install resolver driven against a local fixture through `DSHM_REGISTRY_URL`, the writing style of the documents, the plugin contract in four contexts, an isolated install of the packed tarball, a download and install of the release asset this entry declares, an independent recount of the first finding, and a scan of every tracked file for machine-specific content. Any failing section exits non-zero.
 
 The package declares `dsh.bundle` and ships `cordis.patch.yml` beside it.

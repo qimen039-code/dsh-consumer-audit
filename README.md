@@ -129,7 +129,7 @@ console.log(ablation(input));
 .\tools\run-evidence.ps1
 ```
 
-它依次检查：市场 entry 的机械要求、市场自己的目录解析器与安装解析器、两份 README 与 `SKILL.md` 的写作特征、插件契约在三种上下文下的行为、`npm pack` 后隔离安装的副本、对首个 finding 的独立重数，以及受跟踪文件里有没有本机信息。任何一节失败，脚本以非零码退出。
+它依次检查：市场 entry 的机械要求与形状、市场自己的目录解析器与安装解析器、两份 README 与 `SKILL.md` 的写作特征、插件契约在四种上下文下的行为、`npm pack` 后隔离安装的副本、**entry 声明的那个 release 资产能不能真取到并装起来**、对首个 finding 的独立重数，以及受跟踪文件里有没有本机信息。任何一节失败，脚本以非零码退出。
 
 当前数字与逐条描述见 [EVIDENCE.md](EVIDENCE.md)。README 不抄这些数字，它们每次运行都会变。
 

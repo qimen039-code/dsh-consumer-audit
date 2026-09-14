@@ -145,11 +145,14 @@ S1 到 S4 是本机四段会话的本地代号。对应关系不公开，因为�
 **权威形状取自线上目录**（`tools/fetch-live-catalog.mjs`）：3,561 条、2,903,494 字节，字段实测为
 `name, owner, url, page, category, description{n,zh}, npm?, version?, stars?, downloads?, install, added`。
 分布：`install` 缺失 0 条、`owner` 缺失 0 条；**无 npm 1,900 条；无 tarball 3,344 条（94%）**。
-⇒ 我这种"无 npm、无 tarball、走 GitHub 源"的形态是**主流**，不是边角。
+⇒ 走 GitHub 源是主流形态。我最初也是"无 npm、无 tarball"那一类，后来才补上 release 资产：
+contributing.md 推荐预构建安装（免 `allowBuilds` 构建授权），而 94% 的条目没有这一项。
 
-**结果：13/13。** 其中三条是负向对照，证明这个测试会失败：
+**结果：14/14。** 其中四条是负向对照或偏好断言，证明这个测试会失败：
 
 ```
+tarball: 已声明                      -> installTargetFor 返回该 tarball，而非 github: 回退
+control: 去掉 tarball                -> 回退成 github:owner/repo
 control: 非 GitHub 的 url           -> installTargetFor 返回 null
 control: category 为空              -> loadRegistry 抛出 "carries no usable category"
 control: plugins 为空数组            -> loadRegistry 抛出 "came back empty"
@@ -293,36 +296,50 @@ dsh web: <loopback url with a one-time token>
 ## 7. 交付证据链（五栏格式）
 
 ```
-判据：  ① 市场 contributing.md 的机械要求全部可本地核验；
+判据：  ① 市场 contributing.md 的机械要求全部可本地核验，且 entry 的形状符合线上惯例
+           （无注释行、字段集受控、description.en 长度接近线上中位数）；
         ①b 我的投稿 entry 必须能被**市场自己的**解析器与安装目标解析器消费，且控制组会失败；
+        ①c entry 里声明的那个 tarball URL 必须真的取得到、是真 tarball、装出来的副本能过
+           插件检查，且版本与本树一致——否则一份投稿可以声明一个 404 而其余检查全绿；
         ② npm pack 出的 tarball 装进隔离前缀后，从装好的副本再跑一遍插件检查必须全过；
         ③ 插件导出形状必须与"本机能加载的插件"一致，而不是与本验证器一致；
         ④ 报告必须写出它搜索了哪些根；shipped 根被标记 searched 当且仅当确实提供了它；
         ⑤ tool_never_invoked 的 finding 必须能被独立重数推翻。
-执行：  powershell -File tools\run-evidence.ps1        （一条命令重跑全部五节）
+执行：  powershell -File tools\run-evidence.ps1        （一条命令重跑全部六条判据）
         node tools\verify-market-manifest.mjs
         node tools\verify-market-consumer.mjs --market <dshmarket>   （本地 fixture + DSHM_REGISTRY_URL）
         node tools\fetch-live-catalog.mjs                            （取权威生成形状与分布）
-        node tools\verify-plugin.mjs                    （默认根 / 显式根 / 装好的副本，三种上下文）
+        node tools\verify-plugin.mjs                    （默认根 / 显式根 / 装好的副本，多种上下文）
         npm pack --pack-destination .install-check
         npm install --prefix .install-check --no-save --ignore-scripts <tgz>
+        curl.exe -sSL --fail -o released.tgz <entry 声明的 tarball URL>
+        npm install --prefix .install-check\released --no-save --ignore-scripts released.tgz
         node tools\recount-name.mjs continuity_recall | continuity_state | set_retention_tier
-观测：  ①  22/22
-        ①b 13/13；installTargetFor -> github:qimen039-code/dsh-consumer-audit；
+观测：  ①  31/31；新增三条形状判据：0 注释行、字段集 = {url,name,category,tarball,description}、
+            description.en 374 字（线上 3,632 条的中位数 182、p90 314、p99 527）
+        ①b 14/14；installTargetFor -> github:qimen039-code/dsh-consumer-audit；
            三条负向对照分别命中 null / "no usable category" / "came back empty"
-        ②  tarball 9 个文件；隔离安装 added 4 packages；装好的副本 22/22
+        ①c 24,274 字节；sha256 5B6AA502…C362E280；tarball 9 个文件；隔离安装 added 4 packages；
+            装好的副本 23/23；版本 0.1.0 == 本树 0.1.0
+            **该节不断言字节相同**：同一次运行里 npm pack 的摘要是 388E84D7…，与 release 资产不同
+            ——npm 会嵌时间戳，把摘要相同当判据只会制造假警报，故两个摘要都记入日志但不作判据
+        ②  tarball 9 个文件；隔离安装 added 4 packages；装好的副本 23/23
         ③  契约由 一个本机私有插件(export default { name, inject, apply }) 与
            另一个本机私有插件 读出；修形状前是 15/15 的假通过（见 §6.1）
         ④  默认根：shipped preset 行 searched=false；显式根：searched=true 且 skill 数 2 → 4
-        ⑤  continuity_recall: tool/call 含字符串 14 条，精确调用名 0 条
-           continuity_state 70 条（66 → 68 → 70，随本会话增长）；set_retention_tier 6 条
+            （本机未设 SHIPPED_PRESETS_DIR 时该节记 SKIPPED，不计入通过）
+        ⑤  continuity_recall: tool/call 含字符串 0 条，精确调用名 0 条
+           continuity_state 83 条（66 → 68 → 70 → 83，随本会话增长）；set_retention_tier 6 条
         一节不通过脚本即 exit 1：`all steps passed` / `FAILED: ...`
-归类：  applied_verified（工具逻辑、安装性、市场清单要求、**市场消费者解析**、导出形状、根搜索可见性）
+归类：  applied_verified（工具逻辑、安装性、市场清单要求、**市场消费者解析**、导出形状、
+                        根搜索可见性、**entry 声明资产的可得性与可安装性**）
         applied_verified（含**真实装载**：desktop 与 web 两个 profile 实际启动过，回执 disposers=2）
 边界：  没有在真实 profile 上执行 dsh plugin add（会改动用户活动插件树，AGENTS.md §2 记录过
         未声明的本地包会让整棵树加载失败）；没有启动 harness 端到端验证；
-        **没有向 awesome-dsh-plugin 提 PR**，所以"已进入市场"仍未发生；
-        扫描只覆盖本机存在的 15 个会话文件；计数随会话增长漂移；
+        **已向 awesome-dsh-plugin 提 PR #5048**，但**尚未合并**——「已进入市场」仍未发生，
+        合并决定权在维护者，CI 通过只是前置条件；
+        ①c 只能抓到「资产缺失」与「版本漂移」，同一版本号下的内容漂移抓不到；
+        扫描只覆盖本机存在的会话文件；计数随会话增长漂移；
         本机市场配置了一个 HTTP 代理，地址不记录。本地 fixture 抓取未受影响，正例通过。
 ```
 

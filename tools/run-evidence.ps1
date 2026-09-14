@@ -1,7 +1,10 @@
 # Reproduce the whole evidence chain for dsh-consumer-audit.
 #   .\tools\run-evidence.ps1
 # Writes EVIDENCE-run.log next to the package and exits non-zero if any step fails.
-# No network, no model calls, no writes outside .install-check and EVIDENCE-run.log.
+# Section 1b reads the installed market plugin if it is present, and section 4b
+# downloads the release asset the market entry declares. Both reach outside this
+# package; every other section is local. Nothing writes outside .install-check and
+# EVIDENCE-run.log.
 
 $ErrorActionPreference = 'Stop'
 $pkgRoot = Split-Path -Parent $PSScriptRoot
@@ -85,6 +88,46 @@ Run 'plugin checks (installed copy)' 'node' @(
   (Join-Path $PSScriptRoot 'verify-plugin.mjs'),
   (Join-Path $stage 'node_modules\dsh-consumer-audit')
 )
+
+Section '4b. the release asset the market entry points users at'
+# Section 4 packs the working tree. That is not the artifact a storefront hands a
+# user: the entry declares a tarball URL, and until this section existed nothing
+# checked that the declared URL resolves, that it is a real tarball, or that what
+# it contains loads. A submission can declare a 404 and still pass everything else.
+$entryPath = Join-Path $pkgRoot 'market\qimen039-code__dsh-consumer-audit.yml'
+$declaredMatch = [regex]::Match((Get-Content $entryPath -Raw), '(?m)^tarball:\s*(\S+)\s*$')
+if (-not $declaredMatch.Success) {
+  'the entry declares no tarball; SKIPPED (not a pass)' | Add-Content $log
+} else {
+  $declared = $declaredMatch.Groups[1].Value
+  "declared: $declared" | Add-Content $log
+  $released = Join-Path $stage 'released.tgz'
+  $releasedRoot = Join-Path $stage 'released'
+  Run 'download the declared asset' 'curl.exe' @('-sSL', '--fail', '-o', $released, $declared)
+  if (Test-Path $released) {
+    "bytes: $((Get-Item $released).Length)" | Add-Content $log
+    "sha256: $((Get-FileHash $released -Algorithm SHA256).Hash)" | Add-Content $log
+    # Byte-identity with the local pack is reported, not asserted: npm embeds
+    # timestamps, so two packs of the same tree need not be identical, and a
+    # digest mismatch here would be a false alarm rather than a defect.
+    if (Test-Path $tgz) { "local pack sha256: $((Get-FileHash $tgz -Algorithm SHA256).Hash)" | Add-Content $log }
+    Run 'declared asset is a tarball' 'tar' @('-tzf', $released)
+    Run 'install the declared asset' 'npm' @('install', '--prefix', $releasedRoot, '--no-save', '--ignore-scripts', $released)
+    Run 'plugin checks (declared asset)' 'node' @(
+      (Join-Path $PSScriptRoot 'verify-plugin.mjs'),
+      (Join-Path $releasedRoot 'node_modules\dsh-consumer-audit')
+    )
+    # A stale asset at the declared URL would still install; version drift is the
+    # cheapest signal that the release lags the tree it claims to be.
+    $installed = Join-Path $releasedRoot 'node_modules\dsh-consumer-audit\package.json'
+    if (Test-Path $installed) {
+      $theirVersion = (Get-Content $installed -Raw | ConvertFrom-Json).version
+      $ourVersion = (Get-Content (Join-Path $pkgRoot 'package.json') -Raw | ConvertFrom-Json).version
+      "version: declared asset $theirVersion / this tree $ourVersion" | Add-Content $log
+      if ($theirVersion -ne $ourVersion) { $script:failed += 'declared asset version differs from this tree' }
+    }
+  }
+}
 
 Section '5. independent recount of the reported finding'
 Run 'continuity_recall' 'node' @((Join-Path $PSScriptRoot 'recount-name.mjs'), 'continuity_recall')
