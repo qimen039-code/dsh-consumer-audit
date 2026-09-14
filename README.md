@@ -143,7 +143,7 @@ lib/collect.js   读 DSH_HOME，产出那份清单
 lib/index.js     注册工具与 skill
 skills/          skill 正文
 tools/           各项检查与发布脚本
-market/          提交进精选列表的条目文件
+market/          提交进精选列表的条目文件与提交说明
 ```
 
 ## 许可

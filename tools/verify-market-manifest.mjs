@@ -34,6 +34,27 @@ check(
 
 // --- market entry file
 check("entry file present", entry.length > 0, entryPath);
+
+// contributing.md's template is plain YAML, and every entry sampled from
+// data/plugins/ (12 of them) carries 0 comment lines. Notes about how the file
+// gets submitted belong in market/README.md, not in the submission: an entry
+// that reads as instructions to its own author is scaffolding left in a public
+// diff.
+const commentLines = entry.split("\n").filter((l) => /^\s*#/.test(l));
+check("entry carries no comment lines", commentLines.length === 0, `${commentLines.length} comment line(s)`);
+
+// contributing.md: "a hand-written `npm:` key in your yml is rejected" — the
+// registry mapping is collected automatically. Anything not defined by
+// contributing.md is either a typo or a field the market will not read.
+const ENTRY_FIELDS = new Set(["url", "name", "category", "tarball", "description"]);
+const entryKeys = [...entry.matchAll(/^([A-Za-z_][\w-]*):/gm)].map((m) => m[1]);
+const unknownKeys = entryKeys.filter((k) => !ENTRY_FIELDS.has(k));
+check(
+  "entry declares no field contributing.md does not define",
+  unknownKeys.length === 0,
+  unknownKeys.join(", ") || entryKeys.join(", "),
+);
+
 const urlMatch = /^url:\s*(\S+)$/m.exec(entry);
 check("entry url is a github repo url", /^https:\/\/github\.com\/[^/]+\/[^/]+$/.test(urlMatch?.[1] ?? ""), urlMatch?.[1]);
 const nameMatch = /^name:\s*(\S+)$/m.exec(entry);
@@ -72,6 +93,16 @@ const rawEn = /^\s*en:\s*(.*)$/m.exec(entry)?.[1] ?? "";
 const en = /^(['"])([\s\S]*)\1$/.exec(rawEn.trim())?.[2] ?? rawEn.trim();
 check("description.en present", en.length > 20, en.slice(0, 40));
 check("description.en ends with a period", en.trim().endsWith("."), en.slice(-20));
+// contributing.md calls the description a claim that is "checked against your
+// code", so each clause is another thing a reviewer has to verify. Measured
+// against 3,632 description lines in the generated upstream README: median 182
+// characters, p90 314, p99 527, max 2,206. 400 is a bound this repository sets
+// for itself, tighter than the upstream tail; it is not an upstream rule.
+check(
+  "description.en stays under this repo's 400-character bound",
+  en.length <= 400,
+  `${en.length} chars (upstream median 182, p90 314, p99 527)`,
+);
 check(
   "description containing ': ' is quoted",
   !en.includes(": ") || /^(['"])/.test(rawEn.trim()),

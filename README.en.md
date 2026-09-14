@@ -143,7 +143,7 @@ lib/collect.js   reads DSH_HOME and produces that inventory
 lib/index.js     registers the tool and the skill
 skills/          the skill body
 tools/           the checks and the publish script
-market/          the entry file for the curated list
+market/          the entry file for the curated list, and the notes behind it
 ```
 
 ## License
