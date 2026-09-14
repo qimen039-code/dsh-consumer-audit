@@ -1,10 +1,11 @@
 # Publish dsh-consumer-audit to the DSH plugin market.
 #
-# Two stages, deliberately separate, because the market's CI rejects a repository
-# that is less than 1 day old. Stage 1 is safe to run now; stage 2 must wait.
+# Stages, deliberately separate, because the market's CI rejects a repository
+# that is less than 1 day old. `create` is safe to run now; `pr` must wait.
 #
 #   .\tools\publish.ps1 -Stage create            # create the public repo and push
 #   .\tools\publish.ps1 -Stage pr                # open the entry PR (>24h later)
+#   .\tools\publish.ps1 -Stage update            # refresh the open PR's entry
 #   .\tools\publish.ps1 -Stage create -DryRun    # print what would run
 #
 # Nothing here touches $DSH_HOME. Nothing here installs anything locally.
@@ -12,7 +13,7 @@
 [CmdletBinding()]
 param(
   [Parameter(Mandatory = $true)]
-  [ValidateSet('create', 'pr', 'status')]
+  [ValidateSet('create', 'pr', 'update', 'status')]
   [string]$Stage,
   [switch]$DryRun,
   [string]$Owner = 'qimen039-code',
@@ -72,6 +73,29 @@ switch ($Stage) {
       Write-Host "The market CI checks repository age: it must be at least 1 day old."
       Write-Host "Re-run with -Stage pr after that window closes."
     }
+  }
+
+  'update' {
+    # contributing.md: a fix goes to the branch already under review; a second
+    # pull request for the same entry is noise the maintainers have to close.
+    $work = Join-Path $env:TEMP "$Repo-pr"
+    if (-not (Test-Path $work)) { throw "no working copy at $work; run -Stage pr first" }
+    Invoke-Step 'switch to the pull request branch' @('git', '-C', $work, 'checkout', $branch)
+    Invoke-Step 'fast-forward the branch' @('git', '-C', $work, 'pull', '--ff-only')
+
+    $dest = Join-Path $work "data\plugins\$entryName"
+    if ($DryRun) {
+      Write-Host "[dry-run] copy $pkgRoot\market\$entryName -> $dest"
+    } else {
+      Copy-Item (Join-Path $pkgRoot "market\$entryName") $dest -Force
+      Write-Host '[run] entry refreshed on the branch'
+    }
+
+    Invoke-Step 'diff against the base' @('git', '-C', $work, '--no-pager', 'diff', '--stat')
+    Invoke-Step 'stage' @('git', '-C', $work, 'add', "data/plugins/$entryName")
+    Invoke-Step 'commit' @(@('git', '-C', $work) + $gitIdentity + @('commit', '-m', "Update $slug entry"))
+    Invoke-Step 'push to the fork' @('git', '-C', $work, 'push', 'origin', $branch)
+    Write-Host "The open pull request now points at the new commit." -ForegroundColor Green
   }
 
   'pr' {
