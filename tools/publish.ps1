@@ -24,6 +24,7 @@ $pkgRoot = Split-Path -Parent $PSScriptRoot
 $slug = "$Owner/$Repo"
 $upstream = 'awesome-dsh-plugin/awesome-dsh-plugin'
 $entryName = "$($Owner)__$Repo.yml"
+$branch = "add-$Repo"
 
 function Invoke-Step([string]$Label, [string[]]$Command) {
   $pretty = ($Command | ForEach-Object { if ($_ -match '\s') { "'$_'" } else { $_ } }) -join ' '
@@ -73,29 +74,35 @@ switch ($Stage) {
   'pr' {
     $created = gh repo view $slug --json createdAt --jq .createdAt 2>$null
     if (-not $created) { throw "cannot read $slug; run -Stage create first" }
-    $age = (Get-Date) - [datetime]$created
+    $age = (Get-Date).ToUniversalTime() - ([datetime]$created).ToUniversalTime()
     Write-Host "repository age: $([math]::Round($age.TotalHours,1)) h (CI requires >= 24 h)"
     if ($age.TotalHours -lt 24) { throw "repository is younger than 24 h; the market CI will reject the PR" }
 
-    $work = Join-Path $env:TEMP "awesome-dsh-plugin-pr"
+    # The upstream grants READ only, so the branch has to live on a fork and the
+    # pull request is cross-repo. Pushing to upstream directly would fail.
+    if (-not (gh repo view "${Owner}/$upstream" --json name 2>$null)) {
+      Invoke-Step 'fork the curated list' @('gh', 'repo', 'fork', $upstream, '--clone=false')
+    }
+
+    $work = Join-Path $env:TEMP "$Repo-pr"
     if (Test-Path $work) { Remove-Item $work -Recurse -Force }
-    Invoke-Step 'clone the curated list' @('gh', 'repo', 'clone', $upstream, $work)
-    Invoke-Step 'branch' @('git', '-C', $work, 'checkout', '-b', "add-$Repo")
+    Invoke-Step 'clone the fork' @('git', 'clone', "https://github.com/${Owner}/$upstream.git", $work)
+    Invoke-Step 'branch' @('git', '-C', $work, 'checkout', '-b', $branch)
 
     $dest = Join-Path $work "data\plugins\$entryName"
     if ($DryRun) {
       Write-Host "[dry-run] copy $pkgRoot\market\$entryName -> $dest"
     } else {
       Copy-Item (Join-Path $pkgRoot "market\$entryName") $dest -Force
-      Write-Host "[run] copy entry into data\plugins"
+      Write-Host "[run] copied the entry into data\plugins"
     }
 
-    Invoke-Step 'commit' @('git', '-C', $work, 'add', "data/plugins/$entryName")
+    Invoke-Step 'stage' @('git', '-C', $work, 'add', "data/plugins/$entryName")
     Invoke-Step 'commit' @('git', '-C', $work, 'commit', '-m', "Add $slug")
-    Invoke-Step 'push' @('git', '-C', $work, 'push', '-u', 'origin', "add-$Repo")
+    Invoke-Step 'push to the fork' @('git', '-C', $work, 'push', '-u', 'origin', $branch)
     Invoke-Step 'open the pull request' @(
-      'gh', 'pr', 'create', '--repo', $upstream, '--title', "Add $slug",
-      '--body-file', (Join-Path $pkgRoot 'market\PR.md')
+      'gh', 'pr', 'create', '--repo', $upstream, '--head', "${Owner}:${branch}",
+      '--title', "Add $slug", '--body-file', (Join-Path $pkgRoot 'market\PR.md')
     )
   }
 }
