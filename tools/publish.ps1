@@ -23,7 +23,9 @@ $ErrorActionPreference = 'Stop'
 $pkgRoot = Split-Path -Parent $PSScriptRoot
 $slug = "$Owner/$Repo"
 $upstream = 'awesome-dsh-plugin/awesome-dsh-plugin'
+$gitId = (gh api user --jq '.id')
 $upstreamRepo = ($upstream -split '/')[1]   # the fork keeps the upstream repo name
+$gitIdentity = @('-c', "user.name=$Owner", '-c', "user.email=$gitId+$Owner@users.noreply.github.com")
 $entryName = "$($Owner)__$Repo.yml"
 $branch = "add-$Repo"
 
@@ -99,7 +101,7 @@ switch ($Stage) {
     }
 
     Invoke-Step 'stage' @('git', '-C', $work, 'add', "data/plugins/$entryName")
-    Invoke-Step 'commit' @('git', '-C', $work, 'commit', '-m', "Add $slug")
+    Invoke-Step 'commit' @(@('git', '-C', $work) + $gitIdentity + @('commit', '-m', "Add $slug"))
     Invoke-Step 'push to the fork' @('git', '-C', $work, 'push', '-u', 'origin', $branch)
     Invoke-Step 'open the pull request' @(
       'gh', 'pr', 'create', '--repo', $upstream, '--head', "${Owner}:${branch}",
