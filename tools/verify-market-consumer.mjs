@@ -40,10 +40,11 @@ function readSubmission(path) {
   const url = field(/^url:\s*(\S+)\s*$/m);
   const name = field(/^name:\s*(\S+)\s*$/m);
   const category = field(/^category:\s*(\S+)\s*$/m);
+  const tarball = field(/^tarball:\s*(\S+)\s*$/m) ?? null;
   const rawEn = field(/^\s*en:\s*(.*)$/m) ?? "";
   const rawZh = field(/^\s*zh:\s*(.*)$/m) ?? "";
   const unquote = (s) => /^(['"])([\s\S]*)\1$/.exec(s.trim())?.[2] ?? s.trim();
-  return { url, name, category, description: { en: unquote(rawEn), zh: unquote(rawZh) } };
+  return { url, name, category, tarball, description: { en: unquote(rawEn), zh: unquote(rawZh) } };
 }
 
 check("submission entry exists", existsSync(entryPath), entryPath);
@@ -64,7 +65,7 @@ const generated = {
   category: submission.category,
   description: submission.description,
   npm: null,
-  tarball: null,
+  tarball: submission.tarball,
   stars: null,
   downloads: null,
   install: `dsh plugin --profile web add github:${owner}/${repo}`,
@@ -110,7 +111,19 @@ check("entry survived the parser with its identity intact", got.name === generat
 check("category was normalised to an array by the parser", Array.isArray(got.category) && got.category[0] === submission.category, JSON.stringify(got.category));
 check("both description languages survived", got.description?.en === submission.description.en && got.description?.zh === submission.description.zh, Object.keys(got.description ?? {}));
 const target = installTargetFor(got);
-check("the market's installer resolves our entry to a git target", target === `github:${owner}/${repo}`, target);
+// The market prefers a verified npm package, then an author tarball, then the repo.
+// With a tarball declared the target must be the tarball, not the git fallback.
+if (submission.tarball) {
+  check("the market's installer prefers the declared tarball", target === submission.tarball, target);
+} else {
+  check("the market's installer resolves our entry to a git target", target === "github:" + owner + "/" + repo, target);
+}
+const withoutTarball = installTargetFor({ url: got.url, npm: null, tarball: null });
+check(
+  "control: dropping the tarball falls back to the repo",
+  withoutTarball === "github:" + owner + "/" + repo,
+  withoutTarball,
+);
 
 // ---------------------------------------------------------------- negative controls
 served = { ...fixture, plugins: [{ ...generated, url: "https://example.com/not-a-github-repo" }] };

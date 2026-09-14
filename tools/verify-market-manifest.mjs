@@ -37,6 +37,26 @@ check("entry file present", entry.length > 0, entryPath);
 const urlMatch = /^url:\s*(\S+)$/m.exec(entry);
 check("entry url is a github repo url", /^https:\/\/github\.com\/[^/]+\/[^/]+$/.test(urlMatch?.[1] ?? ""), urlMatch?.[1]);
 const nameMatch = /^name:\s*(\S+)$/m.exec(entry);
+const tarballUrl = /^tarball:\s*(\S+)\s*$/m.exec(entry)?.[1] ?? null;
+if (tarballUrl !== null) {
+  check(
+    "tarball is https on GitHub release hosting",
+    /^https:\/\/github\.com\/[^/]+\/[^/]+\/releases\//.test(tarballUrl),
+    tarballUrl,
+  );
+  check("tarball asset ends with .tgz", tarballUrl.endsWith(".tgz"), tarballUrl);
+  check(
+    "tarball asset name carries no version",
+    !/\/latest\/download\/[^/]*\d+\.\d+\.\d+/.test(tarballUrl),
+    tarballUrl,
+  );
+  check(
+    "tarball lives in the repo the entry lists",
+    tarballUrl.startsWith((urlMatch?.[1] ?? "\u0000") + "/releases/"),
+    tarballUrl,
+  );
+}
+
 check("entry name is owner/repo", /^[^/\s]+\/[^/\s]+$/.test(nameMatch?.[1] ?? ""), nameMatch?.[1]);
 check(
   "entry url and name agree",
