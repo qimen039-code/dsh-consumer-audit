@@ -11,7 +11,7 @@ const checks = [];
 const check = (name, ok, detail) => checks.push({ name, ok: Boolean(ok), detail });
 
 const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
-const entryPath = join(root, "market", "data__plugins__qimen039-code__dsh-consumer-audit.yml");
+const entryPath = join(root, "market", "qimen039-code__dsh-consumer-audit.yml");
 const entry = existsSync(entryPath) ? readFileSync(entryPath, "utf8") : "";
 
 // --- dsh.bundle manifest

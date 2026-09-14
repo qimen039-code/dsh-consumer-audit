@@ -23,6 +23,7 @@ $ErrorActionPreference = 'Stop'
 $pkgRoot = Split-Path -Parent $PSScriptRoot
 $slug = "$Owner/$Repo"
 $upstream = 'awesome-dsh-plugin/awesome-dsh-plugin'
+$upstreamRepo = ($upstream -split '/')[1]   # the fork keeps the upstream repo name
 $entryName = "$($Owner)__$Repo.yml"
 $branch = "add-$Repo"
 
@@ -80,13 +81,13 @@ switch ($Stage) {
 
     # The upstream grants READ only, so the branch has to live on a fork and the
     # pull request is cross-repo. Pushing to upstream directly would fail.
-    if (-not (gh repo view "${Owner}/$upstream" --json name 2>$null)) {
+    if (-not (gh repo view "${Owner}/$upstreamRepo" --json name 2>$null)) {
       Invoke-Step 'fork the curated list' @('gh', 'repo', 'fork', $upstream, '--clone=false')
     }
 
     $work = Join-Path $env:TEMP "$Repo-pr"
     if (Test-Path $work) { Remove-Item $work -Recurse -Force }
-    Invoke-Step 'clone the fork' @('git', 'clone', "https://github.com/${Owner}/$upstream.git", $work)
+    Invoke-Step 'clone the fork' @('git', 'clone', "https://github.com/${Owner}/$upstreamRepo.git", $work)
     Invoke-Step 'branch' @('git', '-C', $work, 'checkout', '-b', $branch)
 
     $dest = Join-Path $work "data\plugins\$entryName"
