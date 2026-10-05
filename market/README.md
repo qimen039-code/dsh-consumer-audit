@@ -21,35 +21,65 @@ than assumed:
   the generated upstream README: median 182 characters, p75 240, p90 314, p99 527,
   max 2,206. The description is read as a claim about the plugin and checked against
   the code, so each added clause is another thing a reviewer has to verify. This
-  entry is held under 400 characters by `tools/verify-market-manifest.mjs` — a
+  entry is held under 400 characters by `tools/verify-market-manifest.mjs`. That is a
   self-imposed bound, not an upstream rule.
 
-Field order follows the two entries that also carry a tarball
-(`LuckVd__dsh-btw.yml`, `yindf__taskfold.yml`): `url`, `name`, `category`,
-`tarball`, `description`.
+Field order follows `contributing.md`'s template: `url`, `name`, `category`,
+`description`.
 
 `description.en` contains `": "`, so it is single-quoted; YAML would otherwise read
 the rest of the line as a nested key. No apostrophes appear in it, so no doubling is
-needed — an apostrophe would have to be written `''` inside single quotes.
+needed; an apostrophe would have to be written `''` inside single quotes.
 
-## Why the tarball asset name carries no version
+## No `tarball:`, because it cannot be installed
 
-`contributing.md` states the rule and the failure it prevents: `latest/download/`
-resolves `latest` at request time but takes the filename literally, so a versioned
-asset name works on submission day and 404s at the next release. The URL here points
-at a version-free asset name; `tools/verify-market-manifest.mjs` asserts that shape,
-and the URL was fetched to confirm it serves the same bytes as the release asset
-(24,274 bytes, sha256 `5B6AA502…C362E280`).
+`contributing.md` recommends `tarball:` for a repo that can't be installed from
+source, and the market turns the field into the command users actually run:
 
-The alternative contributing.md allows — pinning a release tag, where a versioned
-filename is normal — is deliberately not used: it would have to be edited at every
-release.
+```
+dsh plugin --profile web add "<tarball url>"
+```
+
+`dsh plugin` is a passthrough to pnpm. On pnpm 11.8.0 that command **cannot install
+any bare tarball URL** when the profile uses `nodeLinker: hoisted`, which is what
+DSH writes into every profile's `pnpm-workspace.yaml` (checked on this machine:
+`desktop` and `web` both `nodeLinker: hoisted`).
+
+Measured in temp dirs, four target shapes, hoisted linker:
+
+| target | result |
+| --- | --- |
+| `…/releases/latest/download/dsh-consumer-audit.tgz` | exit 1, `ERR_PNPM_MISSING_TARBALL_INTEGRITY` |
+| `…/releases/download/v0.1.0/dsh-consumer-audit.tgz` | exit 1, same |
+| another plugin's pinned tarball (`LuckVd/dsh-btw`) | exit 1, same |
+| `github:qimen039-code/dsh-consumer-audit` | exit 0, installs |
+
+pnpm records `resolution: {tarball: <url>}` with no `integrity` field and then
+refuses its own lockfile. Pinning the tag does not help, and the failure is not
+specific to this repo's asset. Under pnpm's default *isolated* linker the same URLs
+install fine, which is why this is easy to miss: an `npm install` of the downloaded
+file also passes, and did.
+
+So the entry stays on the git target. `tools/verify-market-manifest.mjs` fails if a
+`tarball:` line ever reappears without that being re-measured, and
+`tools/run-evidence.ps1` section 4b installs whatever target the entry resolves to,
+with a hoisted linker, so the check fails the same way the user's install would.
+
+This is a market-wide shape, not a defect in this entry: of 4,412 live catalog
+entries, 332 declare a tarball and 1,899 declare neither npm nor a tarball. Every one
+of those 332 hands users a command that fails on a hoisted profile. Worth reporting
+upstream; the fix there is on their side, not ours.
+
+The release asset is still published and still useful for a manual install
+(`pnpm add <tarball>` works under the default linker, and `npm install <tgz>` works
+always). It is simply not what the entry should point at.
 
 ## No `npm:` key
 
 `contributing.md`: the npm mapping is collected from the registry and "a
 hand-written `npm:` key in your yml is rejected". The package is not published to
-npm, so the entry declares only the tarball.
+npm, so the entry declares neither npm nor a tarball, and the market falls back to
+the git target.
 
 ## What the description claims, and where it is checked
 

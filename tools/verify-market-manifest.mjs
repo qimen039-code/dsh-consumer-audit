@@ -58,25 +58,31 @@ check(
 const urlMatch = /^url:\s*(\S+)$/m.exec(entry);
 check("entry url is a github repo url", /^https:\/\/github\.com\/[^/]+\/[^/]+$/.test(urlMatch?.[1] ?? ""), urlMatch?.[1]);
 const nameMatch = /^name:\s*(\S+)$/m.exec(entry);
-const tarballUrl = /^tarball:\s*(\S+)\s*$/m.exec(entry)?.[1] ?? null;
-if (tarballUrl !== null) {
-  check(
-    "tarball is https on GitHub release hosting",
-    /^https:\/\/github\.com\/[^/]+\/[^/]+\/releases\//.test(tarballUrl),
-    tarballUrl,
-  );
-  check("tarball asset ends with .tgz", tarballUrl.endsWith(".tgz"), tarballUrl);
-  check(
-    "tarball asset name carries no version",
-    !/\/latest\/download\/[^/]*\d+\.\d+\.\d+/.test(tarballUrl),
-    tarballUrl,
-  );
-  check(
-    "tarball lives in the repo the entry lists",
-    tarballUrl.startsWith((urlMatch?.[1] ?? "\u0000") + "/releases/"),
-    tarballUrl,
-  );
-}
+
+// --- the tarball field, and why this entry does not declare one
+//
+// contributing.md recommends `tarball:` for a repo that cannot be installed
+// from source, and the market turns it into the command users actually run:
+// `dsh plugin --profile web add "<tarball url>"`. On pnpm 11.8.0 that command
+// cannot install any bare tarball URL when the profile uses `nodeLinker:
+// hoisted` — which is what DSH writes into every profile's pnpm-workspace.yaml.
+// Measured in temp dirs, four shapes, hoisted linker:
+//
+//   https://github.com/<o>/<r>/releases/latest/download/<name>.tgz   exit=1
+//   https://github.com/<o>/<r>/releases/download/v0.1.0/<name>.tgz   exit=1
+//   https://github.com/<other>/.../releases/download/v0.2.1/...tgz   exit=1
+//   github:<o>/<r>                                                   exit=0
+//
+// All three URL forms fail with ERR_PNPM_MISSING_TARBALL_INTEGRITY: pnpm
+// records `resolution: {tarball: <url>}` with no integrity field and then
+// refuses its own lockfile. Pinning the tag does not help, and it is not
+// specific to this repo's asset. So the entry stays on the git target, and this
+// check fails if a tarball is ever added back without that being re-measured.
+check(
+  "entry declares no tarball, which pnpm 11 cannot install under a hoisted linker",
+  !/^tarball:/m.test(entry),
+  /^tarball:\s*(\S+)\s*$/m.exec(entry)?.[1] ?? "none declared",
+);
 
 check("entry name is owner/repo", /^[^/\s]+\/[^/\s]+$/.test(nameMatch?.[1] ?? ""), nameMatch?.[1]);
 check(

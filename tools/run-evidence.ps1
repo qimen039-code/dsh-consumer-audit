@@ -2,7 +2,7 @@
 #   .\tools\run-evidence.ps1
 # Writes EVIDENCE-run.log next to the package and exits non-zero if any step fails.
 # Section 1b reads the installed market plugin if it is present, and section 4b
-# downloads the release asset the market entry declares. Both reach outside this
+# installs the market's own install target from GitHub. Both reach outside this
 # package; every other section is local. Nothing writes outside .install-check and
 # EVIDENCE-run.log.
 
@@ -65,6 +65,7 @@ Run 'prose lint' 'node' @(
   (Join-Path $pkgRoot 'README.md'),
   (Join-Path $pkgRoot 'README.en.md'),
   (Join-Path $pkgRoot 'skills\consumer-audit\SKILL.md'),
+  (Join-Path $pkgRoot 'market\README.md'),
   (Join-Path $pkgRoot 'EVIDENCE.md')
 )
 
@@ -89,44 +90,50 @@ Run 'plugin checks (installed copy)' 'node' @(
   (Join-Path $stage 'node_modules\dsh-consumer-audit')
 )
 
-Section '4b. the release asset the market entry points users at'
-# Section 4 packs the working tree. That is not the artifact a storefront hands a
-# user: the entry declares a tarball URL, and until this section existed nothing
-# checked that the declared URL resolves, that it is a real tarball, or that what
-# it contains loads. A submission can declare a 404 and still pass everything else.
+Section '4b. the target the market hands users, installed the way a profile installs'
+# Sections 1 and 1b check what the market will publish. This section checks the
+# thing a user actually runs: the market turns the entry into
+#   dsh plugin --profile web add <target>
+# and `dsh plugin` is a passthrough to pnpm. So the entry is only honest if that
+# target installs under the settings DSH writes into every profile.
+#
+# This replaced an earlier section that downloaded the declared tarball and
+# installed it with `npm install --prefix`. That passed while the real command
+# failed: npm over a local file is not what a profile install does. The settings
+# below are copied from a DSH profile's pnpm-workspace.yaml, and nodeLinker is
+# the one that matters — pnpm 11.8.0 records `resolution: {tarball: <url>}` with
+# no integrity under hoisted, then rejects its own lockfile with
+# ERR_PNPM_MISSING_TARBALL_INTEGRITY. Under the default isolated linker the same
+# URLs install fine, which is why this is easy to miss.
 $entryPath = Join-Path $pkgRoot 'market\qimen039-code__dsh-consumer-audit.yml'
-$declaredMatch = [regex]::Match((Get-Content $entryPath -Raw), '(?m)^tarball:\s*(\S+)\s*$')
-if (-not $declaredMatch.Success) {
-  'the entry declares no tarball; SKIPPED (not a pass)' | Add-Content $log
+$entryText = Get-Content $entryPath -Raw
+$entryUrl = [regex]::Match($entryText, '(?m)^url:\s*(\S+)\s*$').Groups[1].Value
+$entryTarball = [regex]::Match($entryText, '(?m)^tarball:\s*(\S+)\s*$')
+$target = if ($entryTarball.Success) { $entryTarball.Groups[1].Value } else { "github:$($entryUrl -replace '^https://github\.com/', '')" }
+"target: $target" | Add-Content $log
+
+$targetDir = Join-Path $stage 'target'
+New-Item -ItemType Directory $targetDir -Force | Out-Null
+'{"name":"install-target-probe","private":true,"version":"0.0.0"}' | Set-Content (Join-Path $targetDir 'package.json')
+"packages:`n  - .`n`nnodeLinker: hoisted`nautoInstallPeers: false`n" | Set-Content (Join-Path $targetDir 'pnpm-workspace.yaml')
+Push-Location $targetDir
+try {
+  Run 'pnpm add the market target (hoisted linker)' 'pnpm' @('add', $target)
+} finally { Pop-Location }
+$targetPkg = Join-Path $targetDir 'node_modules\dsh-consumer-audit\package.json'
+"installed: $(Test-Path $targetPkg)" | Add-Content $log
+if (-not (Test-Path $targetPkg)) {
+  $script:failed += 'the market install target did not install under a hoisted linker'
 } else {
-  $declared = $declaredMatch.Groups[1].Value
-  "declared: $declared" | Add-Content $log
-  $released = Join-Path $stage 'released.tgz'
-  $releasedRoot = Join-Path $stage 'released'
-  Run 'download the declared asset' 'curl.exe' @('-sSL', '--fail', '-o', $released, $declared)
-  if (Test-Path $released) {
-    "bytes: $((Get-Item $released).Length)" | Add-Content $log
-    "sha256: $((Get-FileHash $released -Algorithm SHA256).Hash)" | Add-Content $log
-    # Byte-identity with the local pack is reported, not asserted: npm embeds
-    # timestamps, so two packs of the same tree need not be identical, and a
-    # digest mismatch here would be a false alarm rather than a defect.
-    if (Test-Path $tgz) { "local pack sha256: $((Get-FileHash $tgz -Algorithm SHA256).Hash)" | Add-Content $log }
-    Run 'declared asset is a tarball' 'tar' @('-tzf', $released)
-    Run 'install the declared asset' 'npm' @('install', '--prefix', $releasedRoot, '--no-save', '--ignore-scripts', $released)
-    Run 'plugin checks (declared asset)' 'node' @(
-      (Join-Path $PSScriptRoot 'verify-plugin.mjs'),
-      (Join-Path $releasedRoot 'node_modules\dsh-consumer-audit')
-    )
-    # A stale asset at the declared URL would still install; version drift is the
-    # cheapest signal that the release lags the tree it claims to be.
-    $installed = Join-Path $releasedRoot 'node_modules\dsh-consumer-audit\package.json'
-    if (Test-Path $installed) {
-      $theirVersion = (Get-Content $installed -Raw | ConvertFrom-Json).version
-      $ourVersion = (Get-Content (Join-Path $pkgRoot 'package.json') -Raw | ConvertFrom-Json).version
-      "version: declared asset $theirVersion / this tree $ourVersion" | Add-Content $log
-      if ($theirVersion -ne $ourVersion) { $script:failed += 'declared asset version differs from this tree' }
-    }
-  }
+  Run 'plugin checks (market install target)' 'node' @(
+    (Join-Path $PSScriptRoot 'verify-plugin.mjs'),
+    (Join-Path $targetDir 'node_modules\dsh-consumer-audit')
+  )
+  # A release that lags the tree is the cheapest thing to catch here.
+  $theirVersion = (Get-Content $targetPkg -Raw | ConvertFrom-Json).version
+  $ourVersion = (Get-Content (Join-Path $pkgRoot 'package.json') -Raw | ConvertFrom-Json).version
+  "version: market target $theirVersion / this tree $ourVersion" | Add-Content $log
+  if ($theirVersion -ne $ourVersion) { $script:failed += 'market install target version differs from this tree' }
 }
 
 Section '5. independent recount of the reported finding'

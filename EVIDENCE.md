@@ -293,6 +293,44 @@ dsh web: <loopback url with a one-time token>
 | PowerShell 的 `Copy-Item <目录> <已存在目录>` 会套一层 `lib\lib` | 连着两次**测的是旧代码**，白跑两轮真实启动 |
 
 结论：`verify-plugin.mjs` 的假 ctx 能验逻辑，验不了装载契约。装载契约只有真装上去才知道。
+## 6.10 `tarball:` 字段装不上（已定位并已移除）
+
+条目里声明过 release tarball。它让市场生成了这条安装命令：
+
+    dsh plugin --profile web add "https://github.com/qimen039-code/dsh-consumer-audit/releases/latest/download/dsh-consumer-audit.tgz"
+
+而 `dsh plugin` 是 pnpm 的直通（`dsh plugin --help` 打印的就是 pnpm 11.8.0 的帮助）。**这条命令装不上。**
+
+**触发条件是两个同时成立**，缺一个都不复现：
+
+| 形态 | isolated（pnpm 默认） | hoisted |
+|---|---|---|
+| `…/releases/latest/download/<name>.tgz` | exit 0 | **exit 1** |
+| `…/releases/download/v0.1.0/<name>.tgz` | exit 0 | **exit 1** |
+| 别的插件的钉 tag tarball（LuckVd/dsh-btw） | exit 0 | **exit 1** |
+| `github:qimen039-code/dsh-consumer-audit` | exit 0 | **exit 0** |
+
+而 DSH 给每个 profile 写的 `pnpm-workspace.yaml` 里就是 `nodeLinker: hoisted`（本机 `desktop` 与 `web` 两个 profile 均如此，而 `web` 正是市场命令的目标）。
+
+报错：
+
+    [ERR_PNPM_MISSING_TARBALL_INTEGRITY] Cannot install package "dsh-consumer-audit@<url>":
+    its lockfile entry has no "integrity" field, so pnpm cannot verify the downloaded tarball.
+
+pnpm 记下的是 `resolution: {tarball: <url>}`，没有 integrity 字段，随后拒绝自己写的锁文件。**钉 tag 救不了，也跟我们的资产无关**：换成别人的 tarball 一样失败。
+
+**我先前为什么会误判。** 第一次探针在 `%TEMP%` 的空目录里跑，那里没有 `pnpm-workspace.yaml`，pnpm 走默认 isolated 布局，于是成功了。我把这一次成功当成了结论，还据此在条目里保留了 tarball 字段，并把它写进文档当作"已核实"。**一次成功不是一次测量。**
+
+**为什么旧的第 4b 节没抓到。** 它下载声明的 tarball，再用 `npm install --prefix` 装那个本地文件。那和 profile 真正执行的路径不是一回事：`npm` 装本地文件、isolated 布局、不受 fail-closed 约束，所以一路绿灯。**检查的形状错了，绿灯只说明检查本身没在测真东西。**
+
+**修法。** 移除 `tarball:` 字段，市场回退到 git 目标 `github:qimen039-code/dsh-consumer-audit`（包的 `scripts` 为空，git 安装不需要构建授权）。第 4b 节改成：解析条目最终指向的安装目标，**用 hoisted linker 在隔离目录里真装一遍**，装完再跑插件检查。
+
+**负向对照。** 把 `tarball:` 临时加回条目重跑全链：exit 1，市场清单检查 28→27，第 4b 节报出与生产完全相同的 `ERR_PNPM_MISSING_TARBALL_INTEGRITY`。检查确实会失败，不是摆设。
+
+**这不是本条目独有的问题。** 线上目录 4,412 条里，332 条声明了 tarball，1,899 条既不声明 npm 也不声明 tarball。那 332 条交给用户的命令，在 hoisted profile 上都会失败。这属于市场侧，值得上报，但不是我们能改的。
+
+**边界。** 只在本机 pnpm 11.8.0 上测过；没有在其他 pnpm 版本上验证该 fail-closed 行为是否一致。release 资产本身仍然发布、仍然可用（默认 linker 下 `pnpm add <tarball>` 可装，`npm install <tgz>` 在任何情况下都可装），只是不该作为条目指向的目标。
+
 ## 7. 交付证据链（五栏格式）
 
 ```
