@@ -17,7 +17,9 @@ param(
   [string]$Stage,
   [switch]$DryRun,
   [string]$Owner = 'qimen039-code',
-  [string]$Repo = 'dsh-consumer-audit'
+  [string]$Repo = 'dsh-consumer-audit',
+  # Reuse `pr` with a fresh branch to revise an entry that is already merged.
+  [string]$Branch = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -28,7 +30,7 @@ $gitId = (gh api user --jq '.id')
 $upstreamRepo = ($upstream -split '/')[1]   # the fork keeps the upstream repo name
 $gitIdentity = @('-c', "user.name=$Owner", '-c', "user.email=$gitId+$Owner@users.noreply.github.com")
 $entryName = "$($Owner)__$Repo.yml"
-$branch = "add-$Repo"
+$branch = if ($Branch) { $Branch } else { "add-$Repo" }
 
 function Invoke-Step([string]$Label, [string[]]$Command) {
   $pretty = ($Command | ForEach-Object { if ($_ -match '\s') { "'$_'" } else { $_ } }) -join ' '
@@ -114,7 +116,9 @@ switch ($Stage) {
     $work = Join-Path $env:TEMP "$Repo-pr"
     if (Test-Path $work) { Remove-Item $work -Recurse -Force }
     Invoke-Step 'clone the fork' @('git', 'clone', "https://github.com/${Owner}/$upstreamRepo.git", $work)
-    Invoke-Step 'branch' @('git', '-C', $work, 'checkout', '-b', $branch)
+    # -B, not -b: revising an entry reuses a fresh branch name while the branch
+    # that carried the original submission stays merged and untouched.
+    Invoke-Step 'branch' @('git', '-C', $work, 'checkout', '-B', $branch)
 
     $dest = Join-Path $work "data\plugins\$entryName"
     if ($DryRun) {
@@ -124,12 +128,21 @@ switch ($Stage) {
       Write-Host "[run] copied the entry into data\plugins"
     }
 
+    # A revision is a different act from a first submission: the file is already
+    # on main, so "Add" would misdescribe the diff.
+    $alreadyOnMain = $false
+    if (-not $DryRun) {
+      gh api "repos/$upstream/contents/data/plugins/$entryName" 2>$null | Out-Null
+      $alreadyOnMain = ($LASTEXITCODE -eq 0)
+    }
+    $verb = if ($alreadyOnMain) { 'Update' } else { 'Add' }
+
     Invoke-Step 'stage' @('git', '-C', $work, 'add', "data/plugins/$entryName")
-    Invoke-Step 'commit' @(@('git', '-C', $work) + $gitIdentity + @('commit', '-m', "Add $slug"))
+    Invoke-Step 'commit' @(@('git', '-C', $work) + $gitIdentity + @('commit', '-m', "$verb $slug entry"))
     Invoke-Step 'push to the fork' @('git', '-C', $work, 'push', '-u', 'origin', $branch)
     Invoke-Step 'open the pull request' @(
       'gh', 'pr', 'create', '--repo', $upstream, '--head', "${Owner}:${branch}",
-      '--title', "Add $slug", '--body-file', (Join-Path $pkgRoot 'market\PR.md')
+      '--title', "$verb $slug entry", '--body-file', (Join-Path $pkgRoot 'market\PR.md')
     )
   }
 }

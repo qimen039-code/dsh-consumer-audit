@@ -66,6 +66,7 @@ Run 'prose lint' 'node' @(
   (Join-Path $pkgRoot 'README.en.md'),
   (Join-Path $pkgRoot 'skills\consumer-audit\SKILL.md'),
   (Join-Path $pkgRoot 'market\README.md'),
+  (Join-Path $pkgRoot 'market\PR.md'),
   (Join-Path $pkgRoot 'EVIDENCE.md')
 )
 
