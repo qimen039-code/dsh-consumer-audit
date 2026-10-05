@@ -116,9 +116,14 @@ switch ($Stage) {
     $work = Join-Path $env:TEMP "$Repo-pr"
     if (Test-Path $work) { Remove-Item $work -Recurse -Force }
     Invoke-Step 'clone the fork' @('git', 'clone', "https://github.com/${Owner}/$upstreamRepo.git", $work)
+    # Branch from UPSTREAM main, never the fork's. A fork's main goes stale the
+    # moment anything merges upstream, and a branch cut from it makes an update to
+    # an already-merged entry look like it adds the file a second time, which
+    # GitHub reports as CONFLICTING.
+    Invoke-Step 'fetch upstream main' @('git', '-C', $work, 'fetch', "https://github.com/$upstream.git", 'main')
     # -B, not -b: revising an entry reuses a fresh branch name while the branch
     # that carried the original submission stays merged and untouched.
-    Invoke-Step 'branch' @('git', '-C', $work, 'checkout', '-B', $branch)
+    Invoke-Step 'branch from upstream main' @('git', '-C', $work, 'checkout', '-B', $branch, 'FETCH_HEAD')
 
     $dest = Join-Path $work "data\plugins\$entryName"
     if ($DryRun) {
